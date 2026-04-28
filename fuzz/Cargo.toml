@@ -1,0 +1,29 @@
+[package]
+name = "cad-open-layer-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+cad-dxf-parser = { path = "../crates/cad-dxf-parser" }
+
+[[bin]]
+name = "parse_dxf"
+path = "fuzz_targets/parse_dxf.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "parse_dxf_then_extract"
+path = "fuzz_targets/parse_dxf_then_extract.rs"
+test = false
+doc = false
+bench = false
+
+[dependencies.cad-extract]
+path = "../crates/cad-extract"
