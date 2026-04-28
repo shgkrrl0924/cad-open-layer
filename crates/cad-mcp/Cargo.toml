@@ -1,0 +1,24 @@
+[package]
+name = "cad-mcp"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "MCP (Model Context Protocol) stdio server exposing CAD Open Layer tools to AI agents."
+
+[[bin]]
+name = "cad-mcp"
+path = "src/main.rs"
+
+[dependencies]
+cad-core = { workspace = true }
+cad-dxf-parser = { workspace = true }
+cad-extract = { workspace = true }
+cad-semantic = { workspace = true }
+cad-wasm = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[lints]
+workspace = true
