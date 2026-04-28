@@ -78,6 +78,8 @@ jobs:
         run: cargo build --target wasm32-unknown-unknown -p cad-dxf-parser
       - name: Build cad-extract for WASM
         run: cargo build --target wasm32-unknown-unknown -p cad-extract
+      - name: Build cad-wasm bindings for WASM
+        run: cargo build --target wasm32-unknown-unknown -p cad-wasm
 
   doc:
     name: Build docs

@@ -1,0 +1,30 @@
+[package]
+name = "cad-wasm"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+rust-version.workspace = true
+description = "WASM bindings for CAD Open Layer (browser & Node consumers)."
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+cad-core = { workspace = true }
+cad-dxf-parser = { workspace = true }
+cad-extract = { workspace = true }
+cad-semantic = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# wasm-bindgen + console_error_panic_hook are only used when building for
+# wasm32. On native builds the crate compiles as a normal Rust library so
+# regular cargo test still works against the wire format.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = "0.2"
+console_error_panic_hook = "0.1"
+serde-wasm-bindgen = "0.6"
+
+[lints]
+workspace = true

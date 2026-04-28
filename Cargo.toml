@@ -9,6 +9,7 @@ members = [
     "crates/cad-extract",
     "crates/cad-synthesize",
     "crates/cad-maket-adapter",
+    "crates/cad-wasm",
 ]
 
 [workspace.package]
@@ -57,6 +58,7 @@ cad-semantic = { path = "crates/cad-semantic", version = "0.1.0" }
 cad-extract = { path = "crates/cad-extract", version = "0.1.0" }
 cad-synthesize = { path = "crates/cad-synthesize", version = "0.1.0" }
 cad-maket-adapter = { path = "crates/cad-maket-adapter", version = "0.1.0" }
+cad-wasm = { path = "crates/cad-wasm", version = "0.1.0" }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
