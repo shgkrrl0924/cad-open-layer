@@ -1,0 +1,23 @@
+[package]
+name = "cad-geometry"
+description = "Geometric primitives, spatial index, DCEL. Layer 2 of CAD Open Layer."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+
+[dependencies]
+cad-core.workspace = true
+slotmap.workspace = true
+rstar.workspace = true
+hashbrown.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
+
+[lints]
+workspace = true

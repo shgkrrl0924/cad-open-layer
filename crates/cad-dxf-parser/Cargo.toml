@@ -1,0 +1,20 @@
+[package]
+name = "cad-dxf-parser"
+description = "Streaming DXF file parser. Layer 1 of CAD Open Layer."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+
+[dependencies]
+cad-core.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
+
+[lints]
+workspace = true

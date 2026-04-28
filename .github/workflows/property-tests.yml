@@ -1,0 +1,24 @@
+name: Property Tests
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # 매일 02:00 UTC, longer property test runs
+    - cron: '0 2 * * *'
+
+env:
+  CARGO_TERM_COLOR: always
+  PROPTEST_CASES: 10000
+
+jobs:
+  property:
+    name: Property-based testing (10K cases)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Run property tests
+        run: cargo test --release --workspace -- --ignored property_

@@ -1,0 +1,46 @@
+name: Fuzz
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - 'crates/cad-dxf-parser/**'
+      - 'fuzz/**'
+  schedule:
+    # 매주 일요일 새벽 — long fuzz run
+    - cron: '0 4 * * 0'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  fuzz-quick:
+    name: Quick fuzz (5 min on PR)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+      - uses: Swatinem/rust-cache@v2
+      - name: Install cargo-fuzz
+        run: cargo install cargo-fuzz
+      - name: Fuzz parser (5 min)
+        working-directory: ./fuzz
+        run: cargo fuzz run parse_dxf -- -max_total_time=300
+
+  fuzz-extended:
+    name: Extended fuzz (4 hours, weekly)
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 270
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+      - uses: Swatinem/rust-cache@v2
+      - name: Install cargo-fuzz
+        run: cargo install cargo-fuzz
+      - name: Extended fuzz
+        working-directory: ./fuzz
+        run: cargo fuzz run parse_dxf -- -max_total_time=14400

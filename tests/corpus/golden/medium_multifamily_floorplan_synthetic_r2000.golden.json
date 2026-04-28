@@ -1,0 +1,92 @@
+{
+  "_meta": {
+    "source_file": "medium_multifamily_floorplan_synthetic_r2000.dxf",
+    "dxf_version": "AC1015",
+    "units": "Millimeter",
+    "extracted_by": "statistical analysis (golden master, statistical-level)",
+    "extracted_date": "2026-04-26",
+    "approach": "Source has 23,750+ entities and 364k lines. Element-level golden is impractical and not informative. Instead this golden specifies expected aggregate statistics, structural patterns, and spot-check anchors. Algorithm correctness is judged by these aggregates plus the small_floorplan golden (which is element-precise).",
+    "notes": [
+      "Building name (from ANNOTATION layer): 'SYNTHETIC MULTIFAMILY FLOOR PLAN'.",
+      "Overall dimensions: 114000 mm × 98200 mm based on largest dimension texts.",
+      "Building has 19×19 grid (X axes labeled A-S, Y axes labeled 1-19).",
+      "Door convention same as small DXF: each door = 1 LINE + 1 ARC; uniform 800mm width.",
+      "Window convention same as small DXF: parallel pair with 80mm depth offset."
+    ]
+  },
+
+  "expected_summary": {
+    "wall_count_range": [200, 350],
+    "opening_count_doors": 1296,
+    "opening_count_windows": 972,
+    "room_count_range": [400, 600],
+    "unit_count_range": [100, 130],
+    "dimension_count_visible_range": [50, 200],
+    "grid_x_axes": 19,
+    "grid_y_axes": 19
+  },
+
+  "raw_entity_counts_by_layer": {
+    "WALLS": {"LINE": 3443},
+    "DOORS": {"LINE": 1296, "ARC": 1296},
+    "WINDOWS": {"LINE": 1944, "_note_": "1944 / 2 = 972 window pairs"},
+    "DIMENSIONS": {"LINE": 717, "TEXT": 147},
+    "TEXT": {"TEXT": 327, "_note_": "~110 'UNIT N' labels + 5-6 special labels (ELEV 1, ELEV 2, MAIN CORRIDOR, STAIR x2) + ~210 room labels (LIVING/BED/BATH/KITCHEN per unit)"},
+    "GRID": {"LINE": 38, "TEXT": 37, "CIRCLE": 38, "_note_": "19 vertical + 19 horizontal grid lines = 38 LINE. CIRCLEs = grid bubble symbols. Labels 1-19 + A-S = 38 TEXT (one duplicate or empty, hence 37)"},
+    "FURNITURE": {"LINE": 6804, "CIRCLE": 972, "_note_": "Furniture is non-architectural — preserved as raw, not promoted to semantic."},
+    "HATCH_SIM": {"LINE": 3888, "_note_": "HATCH simulation via LINE — this is an Asian-style or simulated hatch convention. Algorithm should preserve as raw, not extract as wall."},
+    "STAIRS": {"LINE": 30, "TEXT": 2},
+    "CORE": {"LINE": 10, "_note_": "Likely elevator core boundaries."},
+    "ANNOTATION": {"LINE": 8, "TEXT": 1}
+  },
+
+  "expected_grid": {
+    "x_axes_labels": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S"],
+    "y_axes_labels": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19"]
+  },
+
+  "expected_special_rooms": [
+    {"label": "MAIN CORRIDOR", "kind": "Corridor", "expected_count": 1},
+    {"label": "ELEV 1", "kind": "Elevator", "expected_count": 1},
+    {"label": "ELEV 2", "kind": "Elevator", "expected_count": 1},
+    {"label": "STAIR", "kind": "Stair", "expected_count": "≥1, see STAIRS layer"}
+  ],
+
+  "expected_unit_labels": {
+    "format": "UNIT N where N is integer",
+    "estimated_range": "1 ~ 110+",
+    "sampled": ["UNIT 1", "UNIT 10", "UNIT 100", "UNIT 101", "UNIT 102", "UNIT 103", "UNIT 104", "UNIT 105", "UNIT 106", "UNIT 107", "UNIT 108", "UNIT 109", "UNIT 11"]
+  },
+
+  "expected_dimension_text_samples": [
+    "114000",
+    "98200",
+    "5600",
+    "4600"
+  ],
+
+  "expected_overall_size_mm": {"x": 114000, "y": 98200},
+
+  "structural_invariants_to_verify": [
+    "Each unit has exactly one entry door (door arc on a wall facing MAIN CORRIDOR).",
+    "Doors: total ~1296. If algorithm extracts ~1200-1400 it's within tolerance.",
+    "Windows: total ~972. Each window is on an exterior wall.",
+    "Walls: parallel-line-pair extraction yields ~250±50 walls (exterior + interior of all units).",
+    "Grid is 19×19 orthogonal.",
+    "Room detection on walls graph yields one face per unit (~110) + corridor + 2 elevators + ≥1 stair + small spaces (closets, etc.) = ~400-600 rooms total.",
+    "Total floor area should be close to 114m × 98m = 11,172 m² minus walls and outdoor areas. Typical building net area ~75-85% gross."
+  ],
+
+  "noise_handling_expected": [
+    "FURNITURE layer entities: 7776 total (LINE + CIRCLE). All preserved as raw, none promoted to walls/openings/rooms.",
+    "HATCH_SIM layer: 3888 LINE entities simulating hatch fill. Preserved as raw, none promoted.",
+    "Small tick marks similar to small DXF lines 1735-2007: filter by length < 200mm AND position inside wall thickness band."
+  ],
+
+  "algorithm_stress_test_targets": {
+    "parser_throughput_mb_per_s": "≥50 on this file (target: 100 MB/s)",
+    "wall_extraction_time_s": "≤5 on this file (200-350 walls from 3443 lines)",
+    "room_detection_time_s": "≤30 on this file (≥400 rooms from planar graph)",
+    "memory_peak_mb": "≤500 (file is large but we use streaming)"
+  }
+}

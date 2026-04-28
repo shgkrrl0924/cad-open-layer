@@ -1,0 +1,314 @@
+{
+  "_meta": {
+    "source_file": "small_floorplan_simple_r2000.dxf",
+    "dxf_version": "AC1015",
+    "units": "Millimeter",
+    "extracted_by": "manual reading + reasoning (golden master)",
+    "extracted_date": "2026-04-26",
+    "notes": [
+      "All coordinates in millimeters as in source DXF (algorithm normalizes to meters internally).",
+      "Source has 12 layers including FURNITURE / HATCH_SIM / STAIRS / CORE / ANNOTATION which are not part of architectural semantic extraction. Those entities are preserved as raw but do not appear in this golden.",
+      "Lines 1735-2007 in source: short tick marks at y=6450 between x=500-9100, on WALLS layer. Likely decorative wall break indicators. Algorithm should treat as noise (length < 200mm) and not promote to walls.",
+      "Door entities are 1 LINE + 1 ARC each (open leaf + swing trail). Hinge = ARC center. Door width = LINE length = ARC radius = 800mm uniformly."
+    ]
+  },
+
+  "expected_summary": {
+    "wall_count": 8,
+    "opening_count_doors": 6,
+    "opening_count_windows": 6,
+    "room_count": 5,
+    "dimension_count_visible": 2,
+    "grid_count": 1
+  },
+
+  "walls": [
+    {
+      "id": 1,
+      "kind": "Exterior",
+      "layer": "WALLS",
+      "centerline_mm": [[0.0, 100.0], [10000.0, 100.0]],
+      "thickness_mm": 200.0,
+      "from_outer_lines": ["(0,0)-(10000,0)", "(200,200)-(9800,200)"],
+      "note": "South exterior wall. Outer line spans full width; inner line is inset by thickness on both ends (typical wall pair convention)."
+    },
+    {
+      "id": 2,
+      "kind": "Exterior",
+      "layer": "WALLS",
+      "centerline_mm": [[9900.0, 0.0], [9900.0, 6500.0]],
+      "thickness_mm": 200.0,
+      "from_outer_lines": ["(10000,0)-(10000,6500)", "(9800,200)-(9800,6300)"]
+    },
+    {
+      "id": 3,
+      "kind": "Exterior",
+      "layer": "WALLS",
+      "centerline_mm": [[10000.0, 6400.0], [0.0, 6400.0]],
+      "thickness_mm": 200.0,
+      "from_outer_lines": ["(10000,6500)-(0,6500)", "(9800,6300)-(200,6300)"]
+    },
+    {
+      "id": 4,
+      "kind": "Exterior",
+      "layer": "WALLS",
+      "centerline_mm": [[100.0, 6500.0], [100.0, 0.0]],
+      "thickness_mm": 200.0,
+      "from_outer_lines": ["(0,6500)-(0,0)", "(200,6300)-(200,200)"]
+    },
+    {
+      "id": 5,
+      "kind": "Interior",
+      "layer": "WALLS",
+      "centerline_mm": [[4000.0, 200.0], [4000.0, 6300.0]],
+      "thickness_mm": 50.0,
+      "from_inner_line": "(4000,200)-(4000,6300)",
+      "note": "Single-line partition. Algorithm fallback: treat as thin wall with default thickness (50mm). T-junction with W6 at (4000, 3300)."
+    },
+    {
+      "id": 6,
+      "kind": "Interior",
+      "layer": "WALLS",
+      "centerline_mm": [[4000.0, 3300.0], [9800.0, 3300.0]],
+      "thickness_mm": 50.0,
+      "from_inner_line": "(4000,3300)-(9800,3300)",
+      "note": "T-junction with W5 at (4000, 3300) and T-junction with W7 at (7000, 3300)."
+    },
+    {
+      "id": 7,
+      "kind": "Interior",
+      "layer": "WALLS",
+      "centerline_mm": [[7000.0, 3300.0], [7000.0, 6300.0]],
+      "thickness_mm": 50.0,
+      "from_inner_line": "(7000,3300)-(7000,6300)"
+    },
+    {
+      "id": 8,
+      "kind": "Interior",
+      "layer": "WALLS",
+      "centerline_mm": [[200.0, 2500.0], [4000.0, 2500.0]],
+      "thickness_mm": 50.0,
+      "from_inner_line": "(200,2500)-(4000,2500)",
+      "note": "T-junction with W5 at (4000, 2500)."
+    }
+  ],
+
+  "openings": [
+    {
+      "id": 1,
+      "kind": "Door",
+      "host_wall_id": 5,
+      "position_along_wall_mm": 1000.0,
+      "width_mm": 800.0,
+      "swing": {"hinge_at": [4000, 1200], "arc_start_deg": 0, "arc_end_deg": 90},
+      "from_entities": ["LINE (4000,1200)-(4800,1200)", "ARC center=(4000,1200) r=800 0°→90°"],
+      "leads_to_rooms": ["LIVING (south)", "KITCHEN (east of W5)"]
+    },
+    {
+      "id": 2,
+      "kind": "Door",
+      "host_wall_id": 5,
+      "position_along_wall_mm": 4100.0,
+      "width_mm": 800.0,
+      "swing": {"hinge_at": [4000, 4300], "arc_start_deg": 0, "arc_end_deg": 90},
+      "from_entities": ["LINE (4000,4300)-(4800,4300)", "ARC center=(4000,4300) r=800 0°→90°"]
+    },
+    {
+      "id": 3,
+      "kind": "Door",
+      "host_wall_id": 7,
+      "position_along_wall_mm": 1000.0,
+      "width_mm": 800.0,
+      "swing": {"hinge_at": [7000, 4300], "arc_start_deg": 0, "arc_end_deg": 90},
+      "from_entities": ["LINE (7000,4300)-(7800,4300)", "ARC center=(7000,4300) r=800 0°→90°"]
+    },
+    {
+      "id": 4,
+      "kind": "Door",
+      "host_wall_id": 6,
+      "position_along_wall_mm": 1200.0,
+      "width_mm": 800.0,
+      "swing": {"hinge_at": [5200, 3300], "arc_start_deg": 90, "arc_end_deg": 180},
+      "from_entities": ["LINE (5200,3300)-(5200,4100)", "ARC center=(5200,3300) r=800 90°→180°"]
+    },
+    {
+      "id": 5,
+      "kind": "Door",
+      "host_wall_id": 6,
+      "position_along_wall_mm": 4500.0,
+      "width_mm": 800.0,
+      "swing": {"hinge_at": [8500, 3300], "arc_start_deg": 90, "arc_end_deg": 180},
+      "from_entities": ["LINE (8500,3300)-(8500,4100)", "ARC center=(8500,3300) r=800 90°→180°"]
+    },
+    {
+      "id": 6,
+      "kind": "Door",
+      "host_wall_id": 2,
+      "position_along_wall_mm": 1600.0,
+      "width_mm": 800.0,
+      "swing": {"hinge_at": [9800, 1600], "arc_start_deg": 180, "arc_end_deg": 270},
+      "from_entities": ["LINE (9800,1600)-(9000,1600)", "ARC center=(9800,1600) r=800 180°→270°"],
+      "note": "BATH door from KITCHEN — host on exterior right wall (W2), but the door is actually in the inner side of the wall."
+    },
+    {
+      "id": 7,
+      "kind": "Window",
+      "host_wall_id": 3,
+      "position_along_wall_mm": 1000.0,
+      "width_mm": 2000.0,
+      "from_entities": [
+        "LINE (1000,6500)-(3000,6500)",
+        "LINE (1000,6580)-(3000,6580)"
+      ],
+      "note": "Window pair with 80mm depth on top exterior wall."
+    },
+    {
+      "id": 8,
+      "kind": "Window",
+      "host_wall_id": 3,
+      "position_along_wall_mm": 4800.0,
+      "width_mm": 1700.0,
+      "from_entities": [
+        "LINE (4800,6500)-(6500,6500)",
+        "LINE (4800,6580)-(6500,6580)"
+      ]
+    },
+    {
+      "id": 9,
+      "kind": "Window",
+      "host_wall_id": 3,
+      "position_along_wall_mm": 7600.0,
+      "width_mm": 1800.0,
+      "from_entities": [
+        "LINE (7600,6500)-(9400,6500)",
+        "LINE (7600,6580)-(9400,6580)"
+      ]
+    },
+    {
+      "id": 10,
+      "kind": "Window",
+      "host_wall_id": 4,
+      "position_along_wall_mm": 3500.0,
+      "width_mm": 1700.0,
+      "from_entities": [
+        "LINE (0,3500)-(0,5200)",
+        "LINE (-80,3500)-(-80,5200)"
+      ]
+    },
+    {
+      "id": 11,
+      "kind": "Window",
+      "host_wall_id": 2,
+      "position_along_wall_mm": 800.0,
+      "width_mm": 1600.0,
+      "from_entities": [
+        "LINE (10000,800)-(10000,2400)",
+        "LINE (9920,800)-(9920,2400)"
+      ]
+    },
+    {
+      "id": 12,
+      "kind": "Window",
+      "host_wall_id": 1,
+      "position_along_wall_mm": 500.0,
+      "width_mm": 1700.0,
+      "from_entities": [
+        "LINE (500,0)-(2200,0)",
+        "LINE (500,80)-(2200,80)"
+      ]
+    }
+  ],
+
+  "rooms": [
+    {
+      "id": 1,
+      "label": "LIVING",
+      "label_position_mm": [800, 1200],
+      "approx_boundary_mm": [[200, 200], [4000, 200], [4000, 2500], [200, 2500]],
+      "approx_area_sq_m": 8.74,
+      "bounding_wall_ids": [1, 4, 8, 5]
+    },
+    {
+      "id": 2,
+      "label": "KITCHEN",
+      "label_position_mm": [4900, 1200],
+      "approx_boundary_mm": [[4000, 200], [9800, 200], [9800, 3300], [4000, 3300]],
+      "approx_area_sq_m": 17.98,
+      "bounding_wall_ids": [1, 2, 6, 5]
+    },
+    {
+      "id": 3,
+      "label": "BED 1",
+      "label_position_mm": [4700, 4600],
+      "approx_boundary_mm": [[4000, 3300], [7000, 3300], [7000, 6300], [4000, 6300]],
+      "approx_area_sq_m": 9.0,
+      "bounding_wall_ids": [6, 7, 3, 5]
+    },
+    {
+      "id": 4,
+      "label": "BED 2",
+      "label_position_mm": [7600, 4600],
+      "approx_boundary_mm": [[7000, 3300], [9800, 3300], [9800, 6300], [7000, 6300]],
+      "approx_area_sq_m": 8.4,
+      "bounding_wall_ids": [6, 2, 3, 7]
+    },
+    {
+      "id": 5,
+      "label": "BATH",
+      "label_position_mm": [7600, 1200],
+      "approx_area_sq_m": null,
+      "note": "Bath label is inside KITCHEN polygon at y=1200 — actually overlaps with KITCHEN. Architect placed BATH text outside its own room? Possibly an error in source DXF, or BATH is a sub-region within the kitchen-area not separated by a wall (open shower nook?). Algorithm should flag this — TEXT inside another room's polygon.",
+      "extraction_warning": "label_position_outside_or_overlapping"
+    }
+  ],
+
+  "dimensions": [
+    {
+      "id": 1,
+      "kind": "Linear",
+      "text_value": "10000",
+      "measured_value_mm": 10000.0,
+      "linked_to": {"WallLength": "Wall_id 1 (south exterior)"},
+      "from_entities": ["LINE (0,300)-(10000,300)", "LINE (0,-200)-(0,300)", "LINE (10000,-200)-(10000,300)", "TEXT 10000 @ (4800,420)"]
+    },
+    {
+      "id": 2,
+      "kind": "Linear",
+      "text_value": "6500",
+      "measured_value_mm": 6500.0,
+      "linked_to": {"WallLength": "Wall_id 4 (west exterior)"},
+      "from_entities": ["LINE (-200,500)-(-200,7000)", "LINE (-200,0)-(-200,500)", "LINE (-200,6500)-(-200,7000)", "TEXT 6500 @ (-400,620)"]
+    }
+  ],
+
+  "grid": {
+    "id": 1,
+    "x_axes": [
+      {"position_mm": 0.0, "label": "A"},
+      {"position_mm": 4000.0, "label": "B"},
+      {"position_mm": 7000.0, "label": "C"},
+      {"position_mm": 10000.0, "label": "D"}
+    ],
+    "y_axes": [
+      {"position_mm": 0.0, "label": "1"},
+      {"position_mm": 2500.0, "label": "2"},
+      {"position_mm": 3300.0, "label": "3"},
+      {"position_mm": 6500.0, "label": "4"}
+    ]
+  },
+
+  "noise_entities": {
+    "wall_layer_short_lines": {
+      "count": 18,
+      "y_position_mm": 6450,
+      "x_range_mm": [500, 9100],
+      "length_mm": 100,
+      "interpretation": "Tick mark style (every 500mm). Likely decorative or roof-overhang indicator. Algorithm filters: length < min_wall_length (200mm) AND position inside wall thickness."
+    },
+    "furniture_lines": {
+      "count": "~30",
+      "layer": "FURNITURE",
+      "interpretation": "Sofa, beds, kitchen appliances, toilet — preserved as raw entities, not part of architectural semantic."
+    }
+  }
+}

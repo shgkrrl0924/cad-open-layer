@@ -1,0 +1,30 @@
+CAD Open Layer
+Copyright 2026 hakki and CAD Open Layer contributors
+
+This product includes software developed by independent contributors
+under the Apache License 2.0.
+
+==============================================================================
+
+Trademark Notice
+
+DWG is a trademark of Autodesk, Inc. AutoCAD is a registered trademark of
+Autodesk, Inc. CAD Open Layer is an independent open-source project and is
+not affiliated with, endorsed by, sponsored by, or otherwise connected to
+Autodesk, Inc. References to "DWG", "DXF", "AutoCAD", or other Autodesk
+product names are made solely for descriptive purposes to indicate file
+format compatibility.
+
+==============================================================================
+
+This product was inspired by the rhwp project (https://github.com/edwardkim/rhwp,
+Apache-2.0 licensed), which demonstrated the model of a programmable open layer
+for the Korean HWP format. CAD Open Layer adopts the same architectural
+philosophy applied to CAD file formats. No source code from rhwp is included
+in this project.
+
+==============================================================================
+
+Third-party crate dependencies are listed in Cargo.toml. Each dependency
+retains its own license. See the project's release manifest for the
+complete list of dependencies and their licenses.

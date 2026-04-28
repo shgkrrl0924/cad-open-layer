@@ -1,0 +1,25 @@
+[package]
+name = "cad-synthesize"
+description = "Layer 3 → Layer 1 DXF synthesis (writing semantic floorplans to DXF)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+
+[dependencies]
+cad-core.workspace = true
+cad-dxf-writer.workspace = true
+cad-semantic.workspace = true
+cad-geometry.workspace = true
+hashbrown.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+cad-dxf-parser.workspace = true
+cad-extract.workspace = true
+
+[lints]
+workspace = true

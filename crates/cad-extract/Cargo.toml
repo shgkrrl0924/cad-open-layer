@@ -1,0 +1,24 @@
+[package]
+name = "cad-extract"
+description = "Layer 2 → Layer 3 semantic extraction (walls, openings, rooms, dimensions)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+
+[dependencies]
+cad-core.workspace = true
+cad-geometry.workspace = true
+cad-semantic.workspace = true
+hashbrown.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
+cad-dxf-parser.workspace = true
+
+[lints]
+workspace = true
