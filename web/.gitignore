@@ -1,0 +1,3 @@
+# wasm-pack output is regenerated via `wasm-pack build`.
+# Track only source HTML/CSS/JS — pkg/ is build artifact.
+pkg/

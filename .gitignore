@@ -42,3 +42,4 @@ coverage/
 # Local scratch
 .scratch/
 scratch/
+.gstack/

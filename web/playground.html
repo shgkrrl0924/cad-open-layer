@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="paper">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Playground — CAD Open Layer</title>
+<meta name="description" content="Drop a DXF file. Watch the library parse it in your browser via WebAssembly.">
+<link rel="preconnect" href="https://api.fontshare.com">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@600,700,800&f[]=switzer@400,500,600,700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./assets/style.css">
+<style>
+.pg-frame { padding: 32px 0 96px; }
+.pg-head {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 32px;
+  align-items: baseline;
+  margin-bottom: 32px;
+}
+.pg-head .display-2 { margin: 0; }
+
+.playground {
+  border: 1.5px solid var(--ink);
+  background: var(--surface);
+  display: grid;
+  grid-template-columns: 280px 1fr 320px;
+  height: 640px;
+  font-family: 'Geist Mono';
+  font-size: 13px;
+}
+.pg-pane { padding: 16px; overflow: auto; }
+.pg-pane + .pg-pane { border-left: 1px solid var(--rule-strong); }
+
+.pg-files .caption { color: var(--muted); margin-bottom: 12px; }
+
+.dropzone {
+  border: 1px dashed var(--rule-strong);
+  padding: 24px 16px;
+  text-align: center;
+  cursor: pointer;
+  margin-bottom: 16px;
+  transition: 0.15s ease all;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.dropzone:hover, .dropzone.drag {
+  border-color: var(--accent);
+  color: var(--fg);
+  background: var(--hover);
+}
+.dropzone strong {
+  display: block;
+  font-family: 'Switzer';
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--fg);
+  margin-bottom: 4px;
+}
+.dropzone input { display: none; }
+
+.sample-link {
+  display: block;
+  padding: 8px 12px;
+  margin-top: 8px;
+  border: 1px solid var(--rule);
+  text-decoration: none;
+  color: var(--fg);
+  font-size: 12px;
+  background: var(--bg);
+  cursor: pointer;
+  transition: 0.12s ease all;
+}
+.sample-link:hover { border-color: var(--accent); }
+.sample-link strong { display: block; font-family: 'Switzer'; font-size: 12px; font-weight: 600; }
+.sample-link span { color: var(--muted); font-size: 11px; }
+
+.pg-row {
+  padding: 6px 0;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  border-bottom: 1px solid var(--rule);
+  font-size: 12px;
+  color: var(--fg);
+}
+.pg-row span:first-child { color: var(--muted); }
+.pg-row strong { font-weight: 500; color: var(--fg); }
+.pg-row.metric strong { font-family: 'Geist Mono'; font-feature-settings: "tnum"; }
+
+.pg-canvas {
+  background:
+    linear-gradient(var(--rule) 1px, transparent 1px),
+    linear-gradient(90deg, var(--rule) 1px, transparent 1px);
+  background-size: 20px 20px;
+  background-position: -1px -1px;
+  position: relative;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.pg-canvas svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.pg-canvas-empty {
+  font-family: 'Switzer';
+  color: var(--muted);
+  font-size: 14px;
+  text-align: center;
+  padding: 24px;
+  max-width: 360px;
+}
+.pg-canvas-empty .caption { font-family: 'Geist Mono'; font-size: 11px; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; margin-top: 12px; }
+
+.pg-status {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: var(--bg);
+  border: 1px solid var(--rule-strong);
+  padding: 4px 10px;
+  font-size: 11px;
+  color: var(--fg);
+  font-family: 'Geist Mono';
+}
+.pg-status.success { border-color: var(--patina); color: var(--patina); }
+.pg-status.error { border-color: var(--minium); color: var(--minium); }
+.pg-status.busy { border-color: var(--accent); color: var(--accent); }
+
+.pg-inspector .caption { color: var(--muted); margin-bottom: 12px; }
+.pg-inspector h3 { font-family: 'Switzer'; font-size: 13px; font-weight: 600; margin: 16px 0 8px; color: var(--fg); }
+.pg-inspector pre {
+  font-family: 'Geist Mono';
+  font-size: 11px;
+  line-height: 1.5;
+  margin: 0;
+  color: var(--fg);
+  background: var(--bg);
+  padding: 12px;
+  border: 1px solid var(--rule);
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 280px;
+  overflow: auto;
+}
+
+@media (max-width: 960px) {
+  .playground { grid-template-columns: 1fr; height: auto; }
+  .pg-pane { min-height: 200px; }
+  .pg-pane + .pg-pane { border-left: none; border-top: 1px solid var(--rule-strong); }
+  .pg-canvas { min-height: 360px; }
+}
+</style>
+</head>
+<body>
+
+<header class="frame">
+  <div class="page-header">
+    <a class="brand" href="./index.html">
+      <div class="brand-mark"></div>
+      <div>
+        <div class="brand-name">CAD/OPEN-LAYER</div>
+        <div class="brand-version">v0.1 — pre-release</div>
+      </div>
+    </a>
+    <nav class="nav-primary">
+      <a href="./index.html">Home</a>
+      <a href="./playground.html" class="active">Playground</a>
+      <a href="https://github.com/shgkrrl0924/cad-open-layer">GitHub</a>
+    </nav>
+    <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">[ INK ↔ PAPER ]</button>
+  </div>
+</header>
+
+<main class="frame pg-frame">
+
+  <div class="pg-head">
+    <span class="section-no">§01 / PLAYGROUND</span>
+    <h1 class="display-2">Drop a DXF.<br>Parse it in your browser.</h1>
+    <span class="caption" style="color: var(--muted);">Powered by cad-wasm · runs locally · no upload</span>
+  </div>
+
+  <div class="playground">
+
+    <div class="pg-pane pg-files">
+      <div class="caption">FILE</div>
+
+      <label class="dropzone" id="dropzone">
+        <input type="file" id="fileInput" accept=".dxf,text/plain" />
+        <strong>Drop DXF here</strong>
+        or click to browse
+      </label>
+
+      <div class="caption" style="margin-top: 16px;">SAMPLES</div>
+      <a class="sample-link" data-sample="small">
+        <strong>small_floorplan</strong>
+        <span>simple · ~50 entities</span>
+      </a>
+      <a class="sample-link" data-sample="medium">
+        <strong>multifamily</strong>
+        <span>1.8MB · ~23k entities</span>
+      </a>
+
+      <div class="caption" style="margin-top: 24px;">EXTRACTED</div>
+      <div class="pg-row metric"><span>walls</span><strong id="m-walls">—</strong></div>
+      <div class="pg-row metric"><span>openings</span><strong id="m-openings">—</strong></div>
+      <div class="pg-row metric"><span>rooms</span><strong id="m-rooms">—</strong></div>
+      <div class="pg-row metric"><span>warnings</span><strong id="m-warnings">—</strong></div>
+
+      <div class="caption" style="margin-top: 24px;">TIMING</div>
+      <div class="pg-row metric"><span>parse + extract</span><strong id="m-time">—</strong></div>
+      <div class="pg-row metric"><span>file size</span><strong id="m-size">—</strong></div>
+    </div>
+
+    <div class="pg-pane pg-canvas" id="canvasPane">
+      <div class="pg-canvas-empty" id="canvasEmpty">
+        Drop a DXF file or pick a sample.<br>
+        Walls, doors, and windows render here.
+        <div class="caption">SVG · client-side · zero upload</div>
+      </div>
+      <svg id="canvas" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet" style="display: none;"></svg>
+      <div class="pg-status" id="status" style="display: none;">idle</div>
+    </div>
+
+    <div class="pg-pane pg-inspector">
+      <div class="caption">INSPECTOR</div>
+      <h3>Selected entity</h3>
+      <div id="inspectorPanel" style="color: var(--muted); font-size: 12px;">Click a wall on the canvas.</div>
+
+      <h3 style="margin-top: 24px;">Wire payload (truncated)</h3>
+      <pre id="payloadPanel">// drop a file to populate
+{}</pre>
+    </div>
+
+  </div>
+
+  <div style="margin-top: 32px; display: grid; grid-template-columns: 1fr 1fr; gap: 32px;">
+    <div>
+      <h3 class="caption" style="color: var(--muted);">HOW IT WORKS</h3>
+      <p style="font-size: 14px; line-height: 1.6; color: var(--fg); margin: 8px 0 0;">
+        DXF bytes go into <code class="mono" style="font-size: 12px;">extractFloorplanFromDxf()</code>, a
+        wasm-bindgen export. The Rust pipeline runs end-to-end in your browser
+        — parse → 5 extraction algorithms → semantic floorplan. Walls render
+        from the centerline polylines. Nothing leaves your machine.
+      </p>
+    </div>
+    <div>
+      <h3 class="caption" style="color: var(--muted);">THE SAME CODE IN RUST</h3>
+      <pre class="mono" style="font-size: 12px; line-height: 1.55; padding: 12px; background: var(--surface); border: 1px solid var(--rule); margin: 8px 0 0;">use cad_dxf_parser::parse_all;
+use cad_extract::extract_floorplan;
+
+let doc = parse_all(&bytes)?;
+let plan = extract_floorplan(&doc.entities)?;</pre>
+    </div>
+  </div>
+
+</main>
+
+<footer class="frame">
+  <div class="foot-meta">
+    <span>© 2026 CAD Open Layer</span>
+    <span>Apache-2.0</span>
+    <span>v0.1 · pre-release</span>
+    <span style="margin-left: auto;">Drafted with care.</span>
+  </div>
+</footer>
+
+<script type="module">
+import init, { extractFloorplanFromDxf, parseDxfSummary } from "./pkg/cad_wasm.js";
+
+const els = {
+  dropzone: document.getElementById("dropzone"),
+  fileInput: document.getElementById("fileInput"),
+  canvas: document.getElementById("canvas"),
+  canvasEmpty: document.getElementById("canvasEmpty"),
+  status: document.getElementById("status"),
+  inspectorPanel: document.getElementById("inspectorPanel"),
+  payloadPanel: document.getElementById("payloadPanel"),
+  metrics: {
+    walls: document.getElementById("m-walls"),
+    openings: document.getElementById("m-openings"),
+    rooms: document.getElementById("m-rooms"),
+    warnings: document.getElementById("m-warnings"),
+    time: document.getElementById("m-time"),
+    size: document.getElementById("m-size"),
+  },
+};
+
+function setStatus(text, kind) {
+  els.status.style.display = "block";
+  els.status.textContent = text;
+  els.status.className = "pg-status" + (kind ? " " + kind : "");
+}
+
+async function ready() {
+  setStatus("loading wasm…", "busy");
+  await init();
+  setStatus("ready · drop a file", "success");
+}
+
+ready().catch((e) => {
+  console.error(e);
+  setStatus("wasm load failed: " + e.message, "error");
+});
+
+function fmtBytes(n) {
+  if (n < 1024) return n + " B";
+  if (n < 1024 * 1024) return (n / 1024).toFixed(1) + " KB";
+  return (n / (1024 * 1024)).toFixed(2) + " MB";
+}
+
+async function processFile(name, bytes) {
+  setStatus("parsing " + name, "busy");
+  const t0 = performance.now();
+  try {
+    const wire = extractFloorplanFromDxf(bytes);
+    const t1 = performance.now();
+
+    els.metrics.walls.textContent = wire.walls.length.toLocaleString();
+    els.metrics.openings.textContent = wire.openings.length.toLocaleString();
+    els.metrics.rooms.textContent = wire.rooms.length.toLocaleString();
+    els.metrics.warnings.textContent = wire.parse_warnings.toLocaleString();
+    els.metrics.time.textContent = (t1 - t0).toFixed(0) + " ms";
+    els.metrics.size.textContent = fmtBytes(bytes.length);
+
+    renderFloorplan(wire);
+    populateInspector(wire);
+    populatePayload(wire);
+
+    setStatus(
+      "parsed " + wire.walls.length + " walls · " + (t1 - t0).toFixed(0) + "ms",
+      "success",
+    );
+  } catch (e) {
+    console.error(e);
+    setStatus("error: " + (e.message || e), "error");
+  }
+}
+
+function renderFloorplan(wire) {
+  // Compute bounding box across all wall centerlines.
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const w of wire.walls) {
+    for (const p of w.centerline) {
+      if (p.x < minX) minX = p.x;
+      if (p.y < minY) minY = p.y;
+      if (p.x > maxX) maxX = p.x;
+      if (p.y > maxY) maxY = p.y;
+    }
+  }
+  if (!isFinite(minX)) {
+    els.canvas.style.display = "none";
+    els.canvasEmpty.style.display = "block";
+    els.canvasEmpty.innerHTML = "No walls extracted. Try a different file.";
+    return;
+  }
+  const padX = (maxX - minX) * 0.05 || 100;
+  const padY = (maxY - minY) * 0.05 || 100;
+  const vbX = minX - padX;
+  const vbY = minY - padY;
+  const vbW = (maxX - minX) + 2 * padX;
+  const vbH = (maxY - minY) + 2 * padY;
+
+  els.canvasEmpty.style.display = "none";
+  els.canvas.style.display = "block";
+  // DXF y-axis goes up, SVG y-axis goes down — flip with negative scale.
+  els.canvas.setAttribute("viewBox", `${vbX} ${vbY} ${vbW} ${vbH}`);
+  els.canvas.innerHTML = "";
+
+  const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  // Apply Y-flip transform around the bounding box.
+  g.setAttribute("transform", `translate(0, ${minY + maxY}) scale(1, -1)`);
+  els.canvas.appendChild(g);
+
+  // Walls
+  const colorByKind = {
+    Exterior: "var(--ink)",
+    Interior: "var(--prussian)",
+    Partition: "var(--graphite)",
+    Unknown: "var(--graphite)",
+  };
+  const widthByKind = {
+    Exterior: 0.04,
+    Interior: 0.025,
+    Partition: 0.015,
+    Unknown: 0.02,
+  };
+  const baseStrokeWidth = Math.max(vbW, vbH) * 0.001;
+
+  for (const w of wire.walls) {
+    if (w.centerline.length < 2) continue;
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+    path.setAttribute("points", w.centerline.map(p => `${p.x},${p.y}`).join(" "));
+    path.setAttribute("stroke", colorByKind[w.kind] || "var(--ink)");
+    path.setAttribute("stroke-width", baseStrokeWidth * (widthByKind[w.kind] || 0.02) * 80);
+    path.setAttribute("fill", "none");
+    path.setAttribute("stroke-linecap", "round");
+    path.setAttribute("stroke-linejoin", "round");
+    path.style.cursor = "pointer";
+    path.dataset.wallId = w.id;
+    path.dataset.kind = w.kind;
+    path.dataset.thickness = w.thickness;
+    path.dataset.layer = w.layer;
+    path.addEventListener("click", () => selectWall(w));
+    g.appendChild(path);
+  }
+
+  // Rooms (semi-transparent fill)
+  for (const r of wire.rooms) {
+    if (r.boundary.length < 3) continue;
+    const poly = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+    poly.setAttribute("points", r.boundary.map(p => `${p.x},${p.y}`).join(" "));
+    poly.setAttribute("fill", "var(--patina)");
+    poly.setAttribute("fill-opacity", "0.18");
+    poly.setAttribute("stroke", "none");
+    poly.setAttribute("pointer-events", "none");
+    g.insertBefore(poly, g.firstChild);
+  }
+}
+
+function selectWall(w) {
+  els.inspectorPanel.innerHTML = `
+    <div class="pg-row"><span>kind</span><strong>Wall</strong></div>
+    <div class="pg-row"><span>id</span><strong>${w.id}</strong></div>
+    <div class="pg-row"><span>classification</span><strong style="color: var(--accent);">${w.kind}</strong></div>
+    <div class="pg-row"><span>thickness</span><strong>${w.thickness.toFixed(0)}mm</strong></div>
+    <div class="pg-row"><span>layer</span><strong>${w.layer || "—"}</strong></div>
+    <div class="pg-row"><span>vertices</span><strong>${w.centerline.length}</strong></div>
+  `;
+}
+
+function populateInspector(wire) {
+  if (wire.walls.length > 0) {
+    selectWall(wire.walls[0]);
+  } else {
+    els.inspectorPanel.innerHTML = `<div style="color: var(--muted); font-size: 12px;">No walls extracted.</div>`;
+  }
+}
+
+function populatePayload(wire) {
+  // Truncate huge arrays for display.
+  const summary = {
+    walls: wire.walls.length,
+    openings: wire.openings.length,
+    rooms: wire.rooms.length,
+    parse_warnings: wire.parse_warnings,
+    sample_wall: wire.walls[0] || null,
+  };
+  els.payloadPanel.textContent = JSON.stringify(summary, null, 2);
+}
+
+// File input
+els.fileInput.addEventListener("change", async (e) => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const bytes = new Uint8Array(await f.arrayBuffer());
+  processFile(f.name, bytes);
+});
+
+// Drag and drop
+["dragenter", "dragover"].forEach((ev) => {
+  els.dropzone.addEventListener(ev, (e) => {
+    e.preventDefault();
+    els.dropzone.classList.add("drag");
+  });
+});
+["dragleave", "drop"].forEach((ev) => {
+  els.dropzone.addEventListener(ev, (e) => {
+    e.preventDefault();
+    els.dropzone.classList.remove("drag");
+  });
+});
+els.dropzone.addEventListener("drop", async (e) => {
+  const f = e.dataTransfer.files[0];
+  if (!f) return;
+  const bytes = new Uint8Array(await f.arrayBuffer());
+  processFile(f.name, bytes);
+});
+
+// Sample loaders
+const samples = {
+  small: "../tests/corpus/synthetic/small_floorplan_simple_r2000.dxf",
+  medium: "../tests/corpus/synthetic/medium_multifamily_floorplan_synthetic_r2000.dxf",
+};
+document.querySelectorAll(".sample-link").forEach((el) => {
+  el.addEventListener("click", async (e) => {
+    e.preventDefault();
+    const key = el.dataset.sample;
+    const url = samples[key];
+    setStatus("fetching " + key + "…", "busy");
+    try {
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error("HTTP " + resp.status);
+      const buf = await resp.arrayBuffer();
+      processFile(key + ".dxf", new Uint8Array(buf));
+    } catch (err) {
+      setStatus("sample fetch failed: " + err.message, "error");
+    }
+  });
+});
+
+window.toggleTheme = function () {
+  const root = document.documentElement;
+  const next = root.dataset.theme === "ink" ? "paper" : "ink";
+  root.dataset.theme = next;
+  document.querySelector(".theme-toggle").textContent = next === "ink" ? "[ PAPER ]" : "[ INK ]";
+  try { localStorage.setItem("theme", next); } catch (e) {}
+};
+(function () {
+  try {
+    const saved = localStorage.getItem("theme");
+    if (saved) document.documentElement.dataset.theme = saved;
+  } catch (e) {}
+})();
+</script>
+
+</body>
+</html>

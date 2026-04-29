@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="paper">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CAD Open Layer — programmable DWG/DXF for the people who build software</title>
+<meta name="description" content="Open-source Rust + WebAssembly library for reading, writing, and round-trip-preserving DWG/DXF CAD files. Apache-2.0.">
+<meta property="og:title" content="CAD Open Layer">
+<meta property="og:description" content="Programmable DWG/DXF for the people who build software. Apache-2.0.">
+<link rel="preconnect" href="https://api.fontshare.com">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@600,700,800&f[]=switzer@400,500,600,700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./assets/style.css">
+<style>
+.hero {
+  padding: 96px 0 64px;
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 64px;
+}
+.hero-prose { display: flex; flex-direction: column; gap: 32px; }
+.hero-meta {
+  display: flex;
+  gap: 48px;
+  align-items: baseline;
+  padding-top: 32px;
+  border-top: 1px solid var(--rule);
+}
+.hero-meta dt { font-family: 'Geist Mono'; font-size: 11px; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px; }
+.hero-meta dd { margin: 0; font-size: 14px; font-weight: 500; }
+
+@media (max-width: 960px) {
+  .hero { grid-template-columns: 1fr; padding: 64px 0 48px; gap: 48px; }
+  .hero-meta { flex-wrap: wrap; gap: 24px; }
+}
+</style>
+</head>
+<body>
+
+<header class="frame">
+  <div class="page-header">
+    <a class="brand" href="./index.html">
+      <div class="brand-mark"></div>
+      <div>
+        <div class="brand-name">CAD/OPEN-LAYER</div>
+        <div class="brand-version">v0.1 — pre-release</div>
+      </div>
+    </a>
+    <nav class="nav-primary">
+      <a href="./index.html" class="active">Home</a>
+      <a href="./playground.html">Playground</a>
+      <a href="https://github.com/shgkrrl0924/cad-open-layer">GitHub</a>
+    </nav>
+    <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">[ INK ↔ PAPER ]</button>
+  </div>
+</header>
+
+<main class="frame">
+
+  <section class="hero">
+    <div class="hero-prose">
+      <h1 class="display-1">
+        Programmable<br>
+        DWG/DXF for<br>
+        the people who<br>
+        build software.
+      </h1>
+      <p class="body-lg" style="max-width: 480px;">
+        An open-source Rust and WebAssembly library for reading, writing, and round-trip-preserving CAD files. No Autodesk subscription. No COM automation. No vendor lock. Apache-2.0.
+      </p>
+      <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+        <a href="./playground.html" class="btn">Open Playground <span class="arrow">→</span></a>
+        <a href="https://github.com/shgkrrl0924/cad-open-layer" class="btn btn-secondary">GitHub <span class="arrow">↗</span></a>
+      </div>
+      <dl class="hero-meta">
+        <div><dt>RUNTIME</dt><dd>Rust · WASM · Node · Browser</dd></div>
+        <div><dt>LICENSE</dt><dd>Apache-2.0</dd></div>
+        <div><dt>STATUS</dt><dd>Stage 1 / pre-release</dd></div>
+      </dl>
+    </div>
+
+    <div class="titleblock">
+      <dl class="titleblock-header">
+        <div><dt>SHEET</dt><dd>1 of 1</dd></div>
+        <div><dt>SCALE</dt><dd>1:1</dd></div>
+        <div><dt>REV</dt><dd>0.1.0</dd></div>
+        <div><dt>DATE</dt><dd>2026-04-29</dd></div>
+      </dl>
+      <div class="titleblock-body">
+<pre><span class="tk-kw">use</span> <span class="tk-fn">cad_open_layer</span>::prelude::*;
+
+<span class="tk-kw">let</span> plan = <span class="tk-fn">parse_dxf_file</span>(<span class="tk-str">"floorplan.dxf"</span>)?;
+<span class="tk-kw">for</span> wall <span class="tk-kw">in</span> &amp;plan.walls {
+    <span class="tk-com">// 200mm exterior, 50mm partition...</span>
+    <span class="tk-fn">println!</span>(<span class="tk-str">"§{} · {:.2}m · {:.0}mm"</span>,
+        wall.id, wall.<span class="tk-fn">length</span>(), wall.thickness * <span class="tk-num">1000.0</span>);
+}</pre>
+      </div>
+      <div class="titleblock-footer">
+        <span>example/extract_walls.rs</span>
+        <span>● compiled · 0.42s</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="block-head">
+      <span class="section-no">§01 / CAPABILITIES</span>
+      <h2 class="display-2">Three primitives.<br>Round-trip preserving.</h2>
+    </div>
+
+    <div class="cap-table">
+      <span class="cap-num">001</span>
+      <span class="cap-title">Parse</span>
+      <span class="cap-desc">Streaming DXF reader (R12 → R2018). 12 entity types, BLOCKS, HEADER vars. Zero-copy where possible. <strong>23k entities / 178ms</strong> measured on multifamily floor plans.</span>
+      <span class="cap-meta">cad_dxf_parser</span>
+    </div>
+    <div class="cap-table">
+      <span class="cap-num">002</span>
+      <span class="cap-title">Extract</span>
+      <span class="cap-desc">Five algorithms surface architectural semantics: walls (parallel-line-pair), openings (block projection), rooms (DCEL faces), dimensions (chain reconstruction), grid axes.</span>
+      <span class="cap-meta">cad_extract</span>
+    </div>
+    <div class="cap-table">
+      <span class="cap-num">003</span>
+      <span class="cap-title">Synthesize</span>
+      <span class="cap-desc">Floorplan → DXF round-trip. Wall counts, opening counts, room counts, grid axes <strong>preserved exactly</strong> across parse → write → reparse cycles. Layers retained per-wall.</span>
+      <span class="cap-meta">cad_synthesize</span>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="block-head">
+      <span class="section-no">§02 / RUNTIMES</span>
+      <h2 class="display-2">Rust core.<br>Browser, Node, MCP bindings.</h2>
+    </div>
+
+    <div class="cap-table">
+      <span class="cap-num">004</span>
+      <span class="cap-title">Rust</span>
+      <span class="cap-desc">Add <code class="mono" style="font-size: 13px;">cad-open-layer = "0.1"</code> to your Cargo.toml. Eight-crate workspace, zero unsafe, MSRV 1.85.</span>
+      <span class="cap-meta">cargo add</span>
+    </div>
+    <div class="cap-table">
+      <span class="cap-num">005</span>
+      <span class="cap-title">Browser</span>
+      <span class="cap-desc">WASM bindings expose <code class="mono" style="font-size: 13px;">parseDxfSummary()</code> and <code class="mono" style="font-size: 13px;">extractFloorplanFromDxf()</code> as plain JS functions. <a href="./playground.html" style="color: var(--accent);">Try the Playground →</a></span>
+      <span class="cap-meta">cad_wasm</span>
+    </div>
+    <div class="cap-table">
+      <span class="cap-num">006</span>
+      <span class="cap-title">MCP server</span>
+      <span class="cap-desc">JSON-RPC over stdio. Drop into Claude Desktop or Cursor as an AI-agent tool. Two methods: <code class="mono" style="font-size: 13px;">parse_dxf</code>, <code class="mono" style="font-size: 13px;">extract_floorplan</code>.</span>
+      <span class="cap-meta">cad_mcp</span>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="block-head">
+      <span class="section-no">§03 / WHY</span>
+      <h2 class="display-2">Three existing options.<br>Each one compromises.</h2>
+    </div>
+
+    <div class="alerts">
+      <div class="alert alert-warn">
+        <span class="alert-icon">[ APS ]</span>
+        <div>
+          <strong>Autodesk Platform Services</strong> works, but vendor lock-in and recurring cost. You don't own your access path.
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <span class="alert-icon">[ OSS ]</span>
+        <div>
+          <strong>Existing open-source libraries</strong> read DXF but break round-trip. Semantic information (which lines are walls, which arcs are doors) is lost.
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <span class="alert-icon">[ COM ]</span>
+        <div>
+          <strong>AutoCAD COM/ActiveX automation</strong> works only on Windows, only with a licensed AutoCAD running, and is too slow for server pipelines.
+        </div>
+      </div>
+      <div class="alert alert-info">
+        <span class="alert-icon">[ THIS ]</span>
+        <div>
+          <strong>CAD Open Layer</strong> is the fourth path: open source, programmable, vendor-neutral, with semantic preservation as a first-class goal. Built for AI agents, BIM SaaS, and SI pipelines that don't want a person clicking through AutoCAD on their critical path.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="dim-line"><span>END OF SHEET 1 · ←——— 1280px ———→</span></div>
+
+</main>
+
+<footer class="frame">
+  <div class="foot-grid">
+    <div>
+      <div class="foot-tag">Programmable<br>DWG/DXF for<br>the people who<br>build software.</div>
+      <div style="margin-top: 24px; display: flex; gap: 12px;">
+        <a href="https://github.com/shgkrrl0924/cad-open-layer" class="btn btn-ghost">GitHub ↗</a>
+      </div>
+    </div>
+    <div class="foot-col">
+      <h4>LIBRARY</h4>
+      <ul>
+        <li><a href="./playground.html">Playground</a></li>
+        <li><a href="https://github.com/shgkrrl0924/cad-open-layer">Source</a></li>
+        <li><a href="https://github.com/shgkrrl0924/cad-open-layer/issues">Issues</a></li>
+      </ul>
+    </div>
+    <div class="foot-col">
+      <h4>RUNTIMES</h4>
+      <ul>
+        <li><a href="https://github.com/shgkrrl0924/cad-open-layer/tree/main/crates/cad-dxf-parser">Rust</a></li>
+        <li><a href="https://github.com/shgkrrl0924/cad-open-layer/tree/main/crates/cad-wasm">WebAssembly</a></li>
+        <li><a href="https://github.com/shgkrrl0924/cad-open-layer/tree/main/crates/cad-mcp">MCP</a></li>
+      </ul>
+    </div>
+    <div class="foot-col">
+      <h4>COMPANY</h4>
+      <ul>
+        <li><a href="#">About</a></li>
+        <li><a href="#">Contact</a></li>
+      </ul>
+    </div>
+    <div class="foot-col">
+      <h4>LEGAL</h4>
+      <ul>
+        <li><a href="https://github.com/shgkrrl0924/cad-open-layer/blob/main/LICENSE">Apache-2.0</a></li>
+        <li><a href="https://github.com/shgkrrl0924/cad-open-layer/tree/main/legal-package">Compliance</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot-meta">
+    <span>© 2026 CAD Open Layer</span>
+    <span>Apache-2.0</span>
+    <span>v0.1 · pre-release</span>
+    <span style="margin-left: auto;">Drafted with care.</span>
+  </div>
+</footer>
+
+<script>
+function toggleTheme() {
+  const root = document.documentElement;
+  const next = root.dataset.theme === "ink" ? "paper" : "ink";
+  root.dataset.theme = next;
+  document.querySelector(".theme-toggle").textContent = next === "ink" ? "[ PAPER ]" : "[ INK ]";
+  try { localStorage.setItem("theme", next); } catch (e) {}
+}
+(function () {
+  try {
+    const saved = localStorage.getItem("theme");
+    if (saved) document.documentElement.dataset.theme = saved;
+  } catch (e) {}
+})();
+</script>
+
+</body>
+</html>
