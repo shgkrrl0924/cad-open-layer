@@ -109,6 +109,25 @@
   height: 100%;
   display: block;
 }
+.pg-canvas svg polyline[data-wall-id] {
+  vector-effect: non-scaling-stroke;
+  cursor: pointer;
+  transition: stroke 0.1s ease;
+}
+.pg-canvas svg polyline[data-wall-id].hovering {
+  stroke: var(--minium) !important;
+}
+.pg-canvas svg polyline[data-wall-id].selected {
+  stroke: var(--accent) !important;
+  stroke-width: 4 !important;
+}
+/* Invisible thicker hit-target over each wall — same path, transparent stroke. */
+.pg-canvas svg polyline.wall-hit {
+  vector-effect: non-scaling-stroke;
+  stroke: transparent;
+  cursor: pointer;
+  pointer-events: stroke;
+}
 .pg-canvas-empty {
   font-family: 'Switzer';
   color: var(--muted);
@@ -379,37 +398,52 @@ function renderFloorplan(wire) {
   g.setAttribute("transform", `translate(0, ${minY + maxY}) scale(1, -1)`);
   els.canvas.appendChild(g);
 
-  // Walls
+  // Walls — render visible stroke + invisible thick hit-target overlay.
+  // vector-effect: non-scaling-stroke keeps stroke at consistent pixel size
+  // regardless of viewport zoom, so click targets stay generous on tiny rooms
+  // and don't blow out on large ones.
   const colorByKind = {
     Exterior: "var(--ink)",
     Interior: "var(--prussian)",
     Partition: "var(--graphite)",
     Unknown: "var(--graphite)",
   };
-  const widthByKind = {
-    Exterior: 0.04,
-    Interior: 0.025,
-    Partition: 0.015,
-    Unknown: 0.02,
+  const visiblePxByKind = {
+    Exterior: 3.0,
+    Interior: 2.0,
+    Partition: 1.4,
+    Unknown: 1.6,
   };
-  const baseStrokeWidth = Math.max(vbW, vbH) * 0.001;
+  const HIT_PX = 12;  // generous click target
 
   for (const w of wire.walls) {
     if (w.centerline.length < 2) continue;
+    const points = w.centerline.map(p => `${p.x},${p.y}`).join(" ");
+
+    // Visible wall.
     const path = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
-    path.setAttribute("points", w.centerline.map(p => `${p.x},${p.y}`).join(" "));
+    path.setAttribute("points", points);
     path.setAttribute("stroke", colorByKind[w.kind] || "var(--ink)");
-    path.setAttribute("stroke-width", baseStrokeWidth * (widthByKind[w.kind] || 0.02) * 80);
+    path.setAttribute("stroke-width", visiblePxByKind[w.kind] || 2);
     path.setAttribute("fill", "none");
     path.setAttribute("stroke-linecap", "round");
     path.setAttribute("stroke-linejoin", "round");
-    path.style.cursor = "pointer";
     path.dataset.wallId = w.id;
     path.dataset.kind = w.kind;
     path.dataset.thickness = w.thickness;
     path.dataset.layer = w.layer;
-    path.addEventListener("click", () => selectWall(w));
     g.appendChild(path);
+
+    // Invisible hit-target overlay — thicker stroke for reliable clicking.
+    const hit = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+    hit.setAttribute("points", points);
+    hit.setAttribute("stroke-width", HIT_PX);
+    hit.setAttribute("fill", "none");
+    hit.classList.add("wall-hit");
+    hit.addEventListener("click", () => selectWall(w, path));
+    hit.addEventListener("mouseenter", () => path.classList.add("hovering"));
+    hit.addEventListener("mouseleave", () => path.classList.remove("hovering"));
+    g.appendChild(hit);
   }
 
   // Rooms (semi-transparent fill)
@@ -425,7 +459,13 @@ function renderFloorplan(wire) {
   }
 }
 
-function selectWall(w) {
+let selectedPath = null;
+function selectWall(w, pathEl) {
+  if (selectedPath) selectedPath.classList.remove("selected");
+  if (pathEl) {
+    pathEl.classList.add("selected");
+    selectedPath = pathEl;
+  }
   els.inspectorPanel.innerHTML = `
     <div class="pg-row"><span>kind</span><strong>Wall</strong></div>
     <div class="pg-row"><span>id</span><strong>${w.id}</strong></div>
@@ -437,8 +477,10 @@ function selectWall(w) {
 }
 
 function populateInspector(wire) {
+  selectedPath = null;
   if (wire.walls.length > 0) {
-    selectWall(wire.walls[0]);
+    const firstPath = els.canvas.querySelector('polyline[data-wall-id]');
+    selectWall(wire.walls[0], firstPath);
   } else {
     els.inspectorPanel.innerHTML = `<div style="color: var(--muted); font-size: 12px;">No walls extracted.</div>`;
   }
