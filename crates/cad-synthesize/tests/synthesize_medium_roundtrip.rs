@@ -23,7 +23,11 @@ fn medium_round_trip_pipeline_completes() {
     floorplan_to_dxf(&original, &mut buf, &SynthesizeConfig::default()).unwrap();
     let synth_elapsed = synth_start.elapsed();
 
-    eprintln!("MEDIUM SYNTHESIZE: {} bytes in {:?}", buf.len(), synth_elapsed);
+    eprintln!(
+        "MEDIUM SYNTHESIZE: {} bytes in {:?}",
+        buf.len(),
+        synth_elapsed
+    );
 
     let parse_start = Instant::now();
     let parsed = parse_all(Cursor::new(&buf)).unwrap();
@@ -33,10 +37,7 @@ fn medium_round_trip_pipeline_completes() {
     let regenerated = extract_floorplan(&parsed.entities).unwrap();
     let extract_elapsed = extract_start.elapsed();
 
-    eprintln!(
-        "MEDIUM ROUND-TRIP: parse {:?}, extract {:?}",
-        parse_elapsed, extract_elapsed
-    );
+    eprintln!("MEDIUM ROUND-TRIP: parse {parse_elapsed:?}, extract {extract_elapsed:?}");
     eprintln!(
         "  ORIG:  {} walls, {} openings, {} rooms, {} dimensions",
         original.walls.len(),
@@ -65,10 +66,17 @@ fn medium_round_trip_pipeline_completes() {
     // overrides on the original side would NOT survive — flag any mismatch.
     let mut orig_kinds: std::collections::HashMap<WallKind, usize> = Default::default();
     let mut regen_kinds: std::collections::HashMap<WallKind, usize> = Default::default();
-    for w in &original.walls { *orig_kinds.entry(w.kind).or_insert(0) += 1; }
-    for w in &regenerated.walls { *regen_kinds.entry(w.kind).or_insert(0) += 1; }
-    eprintln!("Wall kinds:  orig={:?}, regen={:?}", orig_kinds, regen_kinds);
-    assert_eq!(orig_kinds, regen_kinds, "wall kind histogram must round-trip");
+    for w in &original.walls {
+        *orig_kinds.entry(w.kind).or_insert(0) += 1;
+    }
+    for w in &regenerated.walls {
+        *regen_kinds.entry(w.kind).or_insert(0) += 1;
+    }
+    eprintln!("Wall kinds:  orig={orig_kinds:?}, regen={regen_kinds:?}");
+    assert_eq!(
+        orig_kinds, regen_kinds,
+        "wall kind histogram must round-trip"
+    );
 }
 
 #[test]
@@ -80,10 +88,26 @@ fn medium_round_trip_preserves_door_window_counts() {
     floorplan_to_dxf(&original, &mut buf, &SynthesizeConfig::default()).unwrap();
     let regenerated = extract_floorplan(&parse_all(Cursor::new(&buf)).unwrap().entities).unwrap();
 
-    let orig_doors = original.openings.iter().filter(|o| o.kind == OpeningKind::Door).count();
-    let orig_windows = original.openings.iter().filter(|o| o.kind == OpeningKind::Window).count();
-    let regen_doors = regenerated.openings.iter().filter(|o| o.kind == OpeningKind::Door).count();
-    let regen_windows = regenerated.openings.iter().filter(|o| o.kind == OpeningKind::Window).count();
+    let orig_doors = original
+        .openings
+        .iter()
+        .filter(|o| o.kind == OpeningKind::Door)
+        .count();
+    let orig_windows = original
+        .openings
+        .iter()
+        .filter(|o| o.kind == OpeningKind::Window)
+        .count();
+    let regen_doors = regenerated
+        .openings
+        .iter()
+        .filter(|o| o.kind == OpeningKind::Door)
+        .count();
+    let regen_windows = regenerated
+        .openings
+        .iter()
+        .filter(|o| o.kind == OpeningKind::Window)
+        .count();
 
     eprintln!("Doors:   orig={orig_doors}, regen={regen_doors}");
     eprintln!("Windows: orig={orig_windows}, regen={regen_windows}");
@@ -113,6 +137,14 @@ fn medium_round_trip_preserves_grid() {
         rg.x_axes.len(),
         rg.y_axes.len()
     );
-    assert_eq!(og.x_axes.len(), rg.x_axes.len(), "X-axes count must round-trip");
-    assert_eq!(og.y_axes.len(), rg.y_axes.len(), "Y-axes count must round-trip");
+    assert_eq!(
+        og.x_axes.len(),
+        rg.x_axes.len(),
+        "X-axes count must round-trip"
+    );
+    assert_eq!(
+        og.y_axes.len(),
+        rg.y_axes.len(),
+        "Y-axes count must round-trip"
+    );
 }

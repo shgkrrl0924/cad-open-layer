@@ -13,7 +13,9 @@ pub enum CadError {
     #[error("Unexpected EOF: expected {expected}, line {line}")]
     UnexpectedEof { expected: &'static str, line: usize },
 
-    #[error("Invalid value for group code {code} at line {line}: got {value}, expected {expected}")]
+    #[error(
+        "Invalid value for group code {code} at line {line}: got {value}, expected {expected}"
+    )]
     InvalidValue {
         code: i32,
         value: String,

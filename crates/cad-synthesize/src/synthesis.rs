@@ -54,8 +54,7 @@ pub fn floorplan_to_dxf<W: Write>(
     writer: W,
     config: &SynthesizeConfig,
 ) -> Result<()> {
-    let walls_by_id: HashMap<u32, &Wall> =
-        plan.walls.iter().map(|w| (w.id, w)).collect();
+    let walls_by_id: HashMap<u32, &Wall> = plan.walls.iter().map(|w| (w.id, w)).collect();
 
     let mut entities: Vec<Entity> = vec![];
 
@@ -126,10 +125,7 @@ fn wall_to_parallel_pair(w: &Wall, layer: &str) -> (Entity, Entity) {
     if v.len() < 2 {
         // Degenerate — emit two zero-length LINEs (caller can check).
         let z = Point::new(0.0, 0.0, 0.0);
-        return (
-            line_entity(z, z, layer),
-            line_entity(z, z, layer),
-        );
+        return (line_entity(z, z, layer), line_entity(z, z, layer));
     }
     let a = v[0];
     let b = v[v.len() - 1];
@@ -143,21 +139,17 @@ fn wall_to_parallel_pair(w: &Wall, layer: &str) -> (Entity, Entity) {
     let nx = -dy / len;
     let ny = dx / len;
     let half = w.thickness / 2.0;
-    let a_plus = Point::new(a.x + nx * half, a.y + ny * half, 0.0);
-    let b_plus = Point::new(b.x + nx * half, b.y + ny * half, 0.0);
-    let a_minus = Point::new(a.x - nx * half, a.y - ny * half, 0.0);
-    let b_minus = Point::new(b.x - nx * half, b.y - ny * half, 0.0);
+    let a_plus = Point::new(nx.mul_add(half, a.x), ny.mul_add(half, a.y), 0.0);
+    let b_plus = Point::new(nx.mul_add(half, b.x), ny.mul_add(half, b.y), 0.0);
+    let a_minus = Point::new(nx.mul_add(-half, a.x), ny.mul_add(-half, a.y), 0.0);
+    let b_minus = Point::new(nx.mul_add(-half, b.x), ny.mul_add(-half, b.y), 0.0);
     (
         line_entity(a_plus, b_plus, layer),
         line_entity(a_minus, b_minus, layer),
     )
 }
 
-fn opening_to_insert(
-    o: &Opening,
-    host: &Wall,
-    config: &SynthesizeConfig,
-) -> (Entity, BlockDef) {
+fn opening_to_insert(o: &Opening, host: &Wall, config: &SynthesizeConfig) -> (Entity, BlockDef) {
     let v = &host.centerline.vertices;
     let (a, b) = (v[0], v[v.len() - 1]);
     let dx = b.x - a.x;
@@ -181,14 +173,22 @@ fn opening_to_insert(
             let block = blocks::standard_door_block(std_w);
             // Door leaf is perpendicular to wall, swinging along wall direction.
             let rotation = wall_angle - std::f64::consts::FRAC_PI_2;
-            (block_with_name(block, name), rotation, config.door_layer.clone())
+            (
+                block_with_name(block, name),
+                rotation,
+                config.door_layer.clone(),
+            )
         }
         OpeningKind::Window | OpeningKind::Pass => {
             let (std_w, name) = blocks::nearest_window_block(o.width);
             let block = blocks::standard_window_block(std_w, blocks::DEFAULT_WINDOW_DEPTH_MM);
             // Window aligned with wall direction.
             let rotation = wall_angle;
-            (block_with_name(block, name), rotation, config.window_layer.clone())
+            (
+                block_with_name(block, name),
+                rotation,
+                config.window_layer.clone(),
+            )
         }
     };
 
@@ -223,7 +223,7 @@ fn parse_block_width(block_name: &str) -> f64 {
     let suffix: String = block_name
         .chars()
         .rev()
-        .take_while(|c| c.is_ascii_digit())
+        .take_while(char::is_ascii_digit)
         .collect();
     let suffix: String = suffix.chars().rev().collect();
     suffix.parse::<f64>().unwrap_or(0.0)
@@ -241,13 +241,10 @@ fn room_label_to_text(r: &Room, label: &str, config: &SynthesizeConfig) -> Entit
     }
 }
 
-fn dimension_to_text(
-    d: &cad_semantic::Dimension,
-    config: &SynthesizeConfig,
-) -> Entity {
+fn dimension_to_text(d: &cad_semantic::Dimension, config: &SynthesizeConfig) -> Entity {
     let mid = Point::new(
-        (d.origin.x + d.target.x) / 2.0,
-        (d.origin.y + d.target.y) / 2.0,
+        f64::midpoint(d.origin.x, d.target.x),
+        f64::midpoint(d.origin.y, d.target.y),
         0.0,
     );
     let value = d
@@ -303,7 +300,12 @@ fn grid_to_entities(g: &cad_semantic::Grid, config: &SynthesizeConfig) -> Vec<En
 }
 
 fn line_entity(p1: Point, p2: Point, layer: &str) -> Entity {
-    Entity::Line { p1, p2, layer: layer.into(), props: EntityProps::default() }
+    Entity::Line {
+        p1,
+        p2,
+        layer: layer.into(),
+        props: EntityProps::default(),
+    }
 }
 
 fn text_entity(pos: Point, value: &str, height: f64, layer: &str) -> Entity {

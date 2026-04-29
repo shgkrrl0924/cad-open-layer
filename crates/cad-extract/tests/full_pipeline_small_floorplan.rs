@@ -50,13 +50,11 @@ fn dimensions_link_to_correct_walls() {
     let measured: Vec<f64> = plan.dimensions.iter().map(|d| d.measured_value).collect();
     assert!(
         measured.iter().any(|v| (*v - 10000.0).abs() < 1.0),
-        "should detect 10000mm dimension, got {:?}",
-        measured
+        "should detect 10000mm dimension, got {measured:?}"
     );
     assert!(
         measured.iter().any(|v| (*v - 6500.0).abs() < 1.0),
-        "should detect 6500mm dimension, got {:?}",
-        measured
+        "should detect 6500mm dimension, got {measured:?}"
     );
 
     // Both should link to a wall via WallLength.
@@ -131,11 +129,23 @@ fn full_pipeline_openings_link_to_walls() {
     let doc = parse_all(BufReader::new(file)).unwrap();
     let plan = extract_floorplan(&doc.entities).unwrap();
 
-    let doors = plan.openings.iter().filter(|o| o.kind == OpeningKind::Door).count();
-    let windows = plan.openings.iter().filter(|o| o.kind == OpeningKind::Window).count();
+    let doors = plan
+        .openings
+        .iter()
+        .filter(|o| o.kind == OpeningKind::Door)
+        .count();
+    let windows = plan
+        .openings
+        .iter()
+        .filter(|o| o.kind == OpeningKind::Window)
+        .count();
     assert_eq!(doors, 6);
     assert_eq!(windows, 6);
 
-    let linked = plan.openings.iter().filter(|o| o.host_wall.is_some()).count();
+    let linked = plan
+        .openings
+        .iter()
+        .filter(|o| o.host_wall.is_some())
+        .count();
     assert_eq!(linked, 12, "all openings should link to walls");
 }

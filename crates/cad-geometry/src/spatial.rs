@@ -17,8 +17,10 @@ pub struct SpatialIndex<T> {
 
 impl<T: HasBoundingBox> SpatialIndex<T> {
     #[must_use]
-    pub fn new() -> Self {
-        Self { _phantom: std::marker::PhantomData }
+    pub const fn new() -> Self {
+        Self {
+            _phantom: std::marker::PhantomData,
+        }
     }
 }
 

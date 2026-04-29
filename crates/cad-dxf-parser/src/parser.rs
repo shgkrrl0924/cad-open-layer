@@ -30,7 +30,7 @@ pub enum ParseEvent {
     BlockDefinitionStart { name: String, base_point: Point },
     /// One entity nested inside the current block.
     EntityInBlock(Entity),
-    /// A block definition ended. Carries the fully-assembled BlockDef.
+    /// A block definition ended. Carries the fully-assembled `BlockDef`.
     BlockDefinitionEnd(BlockDef),
     /// End-of-file marker.
     Eof,
@@ -106,7 +106,7 @@ pub struct StreamingParser<R: BufRead> {
 }
 
 impl<R: BufRead> StreamingParser<R> {
-    pub fn new(reader: R) -> Self {
+    pub const fn new(reader: R) -> Self {
         Self {
             reader: PairReader::new(reader),
             state: State::Initial,
@@ -134,15 +134,14 @@ impl<R: BufRead> StreamingParser<R> {
         }
 
         loop {
-            let pair = match self.reader.read_pair()? {
-                Some(p) => p,
-                None => {
-                    if let Some(event) = self.flush_anything()? {
-                        return Ok(Some(event));
-                    }
-                    self.state = State::Done;
-                    return Ok(Some(ParseEvent::Eof));
+            let pair = if let Some(p) = self.reader.read_pair()? {
+                p
+            } else {
+                if let Some(event) = self.flush_anything()? {
+                    return Ok(Some(event));
                 }
+                self.state = State::Done;
+                return Ok(Some(ParseEvent::Eof));
             };
 
             // 0/EOF marker — short-circuit.
@@ -365,31 +364,29 @@ fn block_def_from_groups(groups: &[Pair], warnings: &mut Vec<ParseWarning>) -> B
     let entity = "BLOCK";
 
     let warn_f = |s: &str, code: i32, warnings: &mut Vec<ParseWarning>| -> f64 {
-        match s.trim().parse::<f64>() {
-            Ok(v) => v,
-            Err(_) => {
-                warnings.push(ParseWarning {
-                    code,
-                    value: s.to_string(),
-                    kind: "f64",
-                    entity,
-                });
-                0.0
-            }
+        if let Ok(v) = s.trim().parse::<f64>() {
+            v
+        } else {
+            warnings.push(ParseWarning {
+                code,
+                value: s.to_string(),
+                kind: "f64",
+                entity,
+            });
+            0.0
         }
     };
     let warn_i = |s: &str, code: i32, warnings: &mut Vec<ParseWarning>| -> i64 {
-        match s.trim().parse::<i64>() {
-            Ok(v) => v,
-            Err(_) => {
-                warnings.push(ParseWarning {
-                    code,
-                    value: s.to_string(),
-                    kind: "i64",
-                    entity,
-                });
-                0
-            }
+        if let Ok(v) = s.trim().parse::<i64>() {
+            v
+        } else {
+            warnings.push(ParseWarning {
+                code,
+                value: s.to_string(),
+                kind: "i64",
+                entity,
+            });
+            0
         }
     };
 

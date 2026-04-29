@@ -47,7 +47,14 @@ jobs:
         with:
           components: clippy
       - uses: Swatinem/rust-cache@v2
-      - run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+      # Deny rustc warnings (catches unused_mut, dead_code, etc.) and
+      # clippy's correctness/suspicious lints (real bugs). Allow pedantic
+      # and nursery lints — they're informational style preferences with
+      # high false-positive rates and shouldn't gate CI.
+      - run: cargo clippy --workspace --all-targets --all-features --
+          -D warnings
+          -A clippy::pedantic
+          -A clippy::nursery
 
   build-and-test:
     name: Build & Test (${{ matrix.os }})

@@ -39,8 +39,8 @@ impl Transform2D {
     #[must_use]
     pub fn apply(&self, p: &Point) -> Point {
         Point {
-            x: self.m[0][0] * p.x + self.m[0][1] * p.y + self.m[0][2],
-            y: self.m[1][0] * p.x + self.m[1][1] * p.y + self.m[1][2],
+            x: self.m[0][0].mul_add(p.x, self.m[0][1] * p.y) + self.m[0][2],
+            y: self.m[1][0].mul_add(p.x, self.m[1][1] * p.y) + self.m[1][2],
             z: p.z,
         }
     }
@@ -48,7 +48,7 @@ impl Transform2D {
 
 /// Convert a point from OCS (Object Coordinate System) to WCS (World).
 ///
-/// Uses the Arbitrary Axis Algorithm from the AutoCAD specification.
+/// Uses the Arbitrary Axis Algorithm from the `AutoCAD` specification.
 /// `extrusion` is the OCS Z-axis direction (group codes 210/220/230).
 #[must_use]
 pub fn ocs_to_wcs(point_ocs: &Point, extrusion: &Vec3) -> Point {
@@ -78,16 +78,26 @@ pub fn ocs_to_wcs(point_ocs: &Point, extrusion: &Vec3) -> Point {
 
     // p_wcs = p.x * wx + p.y * wy + p.z * n
     Point {
-        x: point_ocs.x * wx.x + point_ocs.y * wy.x + point_ocs.z * n.x,
-        y: point_ocs.x * wx.y + point_ocs.y * wy.y + point_ocs.z * n.y,
-        z: point_ocs.x * wx.z + point_ocs.y * wy.z + point_ocs.z * n.z,
+        x: point_ocs
+            .z
+            .mul_add(n.x, point_ocs.x.mul_add(wx.x, point_ocs.y * wy.x)),
+        y: point_ocs
+            .z
+            .mul_add(n.y, point_ocs.x.mul_add(wx.y, point_ocs.y * wy.y)),
+        z: point_ocs
+            .z
+            .mul_add(n.z, point_ocs.x.mul_add(wx.z, point_ocs.y * wy.z)),
     }
 }
 
 fn normalize_vec3(v: &Vec3) -> Vec3 {
-    let len = (v.x * v.x + v.y * v.y + v.z * v.z).sqrt();
+    let len = v.z.mul_add(v.z, v.x.mul_add(v.x, v.y * v.y)).sqrt();
     if len > f64::EPSILON {
-        Vec3 { x: v.x / len, y: v.y / len, z: v.z / len }
+        Vec3 {
+            x: v.x / len,
+            y: v.y / len,
+            z: v.z / len,
+        }
     } else {
         *v
     }
@@ -95,9 +105,9 @@ fn normalize_vec3(v: &Vec3) -> Vec3 {
 
 fn cross_vec3(a: &Vec3, b: &Vec3) -> Vec3 {
     Vec3 {
-        x: a.y * b.z - a.z * b.y,
-        y: a.z * b.x - a.x * b.z,
-        z: a.x * b.y - a.y * b.x,
+        x: a.y.mul_add(b.z, -(a.z * b.y)),
+        y: a.z.mul_add(b.x, -(a.x * b.z)),
+        z: a.x.mul_add(b.y, -(a.y * b.x)),
     }
 }
 

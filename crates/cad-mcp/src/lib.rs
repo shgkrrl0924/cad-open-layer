@@ -10,7 +10,7 @@
 //! ## Tools
 //!
 //! - `parse_dxf` — parse a DXF byte string (base64-encoded), return entity
-//!   counts + parse_warnings.
+//!   counts + `parse_warnings`.
 //! - `extract_floorplan` — full Layer 1 → Layer 3 pipeline, return wire
 //!   floorplan JSON.
 //!
@@ -54,15 +54,23 @@ pub struct JsonRpcError {
 }
 
 impl JsonRpcResponse {
-    pub fn ok(id: Value, result: Value) -> Self {
-        Self { jsonrpc: "2.0", id, result: Some(result), error: None }
+    pub const fn ok(id: Value, result: Value) -> Self {
+        Self {
+            jsonrpc: "2.0",
+            id,
+            result: Some(result),
+            error: None,
+        }
     }
     pub fn err(id: Value, code: i32, message: impl Into<String>) -> Self {
         Self {
             jsonrpc: "2.0",
             id,
             result: None,
-            error: Some(JsonRpcError { code, message: message.into() }),
+            error: Some(JsonRpcError {
+                code,
+                message: message.into(),
+            }),
         }
     }
 }
@@ -143,8 +151,8 @@ struct DxfArgs {
 fn call_tool(params: Value) -> Result<Value, String> {
     let call: ToolCallParams =
         serde_json::from_value(params).map_err(|e| format!("invalid params: {e}"))?;
-    let args: DxfArgs = serde_json::from_value(call.arguments)
-        .map_err(|e| format!("invalid arguments: {e}"))?;
+    let args: DxfArgs =
+        serde_json::from_value(call.arguments).map_err(|e| format!("invalid arguments: {e}"))?;
 
     match call.name.as_str() {
         "parse_dxf" => {
@@ -159,7 +167,9 @@ fn call_tool(params: Value) -> Result<Value, String> {
         }
         "extract_floorplan" => {
             let wire = cad_wasm::extract_wire(args.dxf_text.as_bytes())?;
-            Ok(wrap_text_content(serde_json::to_value(&wire).map_err(|e| e.to_string())?))
+            Ok(wrap_text_content(
+                serde_json::to_value(&wire).map_err(|e| e.to_string())?,
+            ))
         }
         other => Err(format!("unknown tool: {other}")),
     }
@@ -220,9 +230,8 @@ mod tests {
 
     #[test]
     fn parse_dxf_tool_invokes_layer_1() {
-        const SMALL_DXF: &str = include_str!(
-            "../../../tests/corpus/synthetic/small_floorplan_simple_r2000.dxf"
-        );
+        const SMALL_DXF: &str =
+            include_str!("../../../tests/corpus/synthetic/small_floorplan_simple_r2000.dxf");
         let resp = handle_request(make_request(
             "tools/call",
             json!({
@@ -238,9 +247,8 @@ mod tests {
 
     #[test]
     fn extract_floorplan_tool_invokes_full_pipeline() {
-        const SMALL_DXF: &str = include_str!(
-            "../../../tests/corpus/synthetic/small_floorplan_simple_r2000.dxf"
-        );
+        const SMALL_DXF: &str =
+            include_str!("../../../tests/corpus/synthetic/small_floorplan_simple_r2000.dxf");
         let resp = handle_request(make_request(
             "tools/call",
             json!({

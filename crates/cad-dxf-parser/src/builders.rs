@@ -11,11 +11,7 @@ use cad_core::{DimensionKindRaw, Entity, EntityProps, LayerName, ParseWarning, P
 use crate::reader::Pair;
 
 /// Top-level dispatch from entity type string to typed builder.
-pub(crate) fn build_entity(
-    kind: &str,
-    groups: &[Pair],
-    warnings: &mut Vec<ParseWarning>,
-) -> Entity {
+pub fn build_entity(kind: &str, groups: &[Pair], warnings: &mut Vec<ParseWarning>) -> Entity {
     match kind {
         "LINE" => build_line(groups, warnings),
         "CIRCLE" => build_circle(groups, warnings),
@@ -31,10 +27,7 @@ pub(crate) fn build_entity(
             Entity::Raw(RawEntity {
                 kind: other.to_string(),
                 layer,
-                groups: groups
-                    .iter()
-                    .map(|p| (p.code, p.value.clone()))
-                    .collect(),
+                groups: groups.iter().map(|p| (p.code, p.value.clone())).collect(),
             })
         }
     }
@@ -65,7 +58,12 @@ fn build_line(groups: &[Pair], warnings: &mut Vec<ParseWarning>) -> Entity {
         }
     }
 
-    Entity::Line { p1, p2, layer, props }
+    Entity::Line {
+        p1,
+        p2,
+        layer,
+        props,
+    }
 }
 
 fn build_circle(groups: &[Pair], warnings: &mut Vec<ParseWarning>) -> Entity {
@@ -91,7 +89,12 @@ fn build_circle(groups: &[Pair], warnings: &mut Vec<ParseWarning>) -> Entity {
         }
     }
 
-    Entity::Circle { center, radius, layer, props }
+    Entity::Circle {
+        center,
+        radius,
+        layer,
+        props,
+    }
 }
 
 fn build_arc(groups: &[Pair], warnings: &mut Vec<ParseWarning>) -> Entity {
@@ -121,7 +124,14 @@ fn build_arc(groups: &[Pair], warnings: &mut Vec<ParseWarning>) -> Entity {
         }
     }
 
-    Entity::Arc { center, radius, start_angle, end_angle, layer, props }
+    Entity::Arc {
+        center,
+        radius,
+        start_angle,
+        end_angle,
+        layer,
+        props,
+    }
 }
 
 fn build_lwpolyline(groups: &[Pair], warnings: &mut Vec<ParseWarning>) -> Entity {
@@ -169,7 +179,13 @@ fn build_lwpolyline(groups: &[Pair], warnings: &mut Vec<ParseWarning>) -> Entity
         bulges.push(current_bulge);
     }
 
-    Entity::LwPolyline { vertices, bulges, closed, layer, props }
+    Entity::LwPolyline {
+        vertices,
+        bulges,
+        closed,
+        layer,
+        props,
+    }
 }
 
 fn build_text(groups: &[Pair], warnings: &mut Vec<ParseWarning>) -> Entity {
@@ -199,7 +215,14 @@ fn build_text(groups: &[Pair], warnings: &mut Vec<ParseWarning>) -> Entity {
         }
     }
 
-    Entity::Text { position, value, height, rotation, layer, props }
+    Entity::Text {
+        position,
+        value,
+        height,
+        rotation,
+        layer,
+        props,
+    }
 }
 
 fn build_insert(groups: &[Pair], warnings: &mut Vec<ParseWarning>) -> Entity {
@@ -356,32 +379,30 @@ fn extract_layer(groups: &[Pair]) -> LayerName {
 /// Lenient float parse. On failure, returns 0.0 AND records a warning so
 /// callers can detect silent corruption (codex medium finding).
 fn parse_f(s: &str, code: i32, entity: &'static str, warnings: &mut Vec<ParseWarning>) -> f64 {
-    match s.trim().parse::<f64>() {
-        Ok(v) => v,
-        Err(_) => {
-            warnings.push(ParseWarning {
-                code,
-                value: s.to_string(),
-                kind: "f64",
-                entity,
-            });
-            0.0
-        }
+    if let Ok(v) = s.trim().parse::<f64>() {
+        v
+    } else {
+        warnings.push(ParseWarning {
+            code,
+            value: s.to_string(),
+            kind: "f64",
+            entity,
+        });
+        0.0
     }
 }
 
 /// Lenient int parse. On failure, returns 0 AND records a warning.
 fn parse_i(s: &str, code: i32, entity: &'static str, warnings: &mut Vec<ParseWarning>) -> i64 {
-    match s.trim().parse::<i64>() {
-        Ok(v) => v,
-        Err(_) => {
-            warnings.push(ParseWarning {
-                code,
-                value: s.to_string(),
-                kind: "i64",
-                entity,
-            });
-            0
-        }
+    if let Ok(v) = s.trim().parse::<i64>() {
+        v
+    } else {
+        warnings.push(ParseWarning {
+            code,
+            value: s.to_string(),
+            kind: "i64",
+            entity,
+        });
+        0
     }
 }

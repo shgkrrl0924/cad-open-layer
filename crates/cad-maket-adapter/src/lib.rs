@@ -1,6 +1,6 @@
 //! Adapter between Maket's floorplan model and our Layer 3 `Floorplan`.
 //!
-//! Used in the Stage 1 4-week PoC for "no-redraw" residential export validation.
+//! Used in the Stage 1 4-week `PoC` for "no-redraw" residential export validation.
 //!
 //! Three possible adapter paths (final shape pending Maket scope call):
 //! - 10A: Maket exposes JSON / Protobuf model directly → 1:1 mapping

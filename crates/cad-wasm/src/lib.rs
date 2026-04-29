@@ -71,7 +71,7 @@ pub struct WireFloorplan {
     pub parse_warnings: usize,
 }
 
-fn wall_kind_str(k: WallKind) -> &'static str {
+const fn wall_kind_str(k: WallKind) -> &'static str {
     match k {
         WallKind::Exterior => "Exterior",
         WallKind::Interior => "Interior",
@@ -80,7 +80,7 @@ fn wall_kind_str(k: WallKind) -> &'static str {
     }
 }
 
-fn opening_kind_str(k: OpeningKind) -> &'static str {
+const fn opening_kind_str(k: OpeningKind) -> &'static str {
     match k {
         OpeningKind::Door => "Door",
         OpeningKind::Window => "Window",
@@ -119,7 +119,13 @@ fn floorplan_to_wire(plan: &Floorplan, parse_warnings: usize) -> WireFloorplan {
                 id: r.id,
                 label: r.label.clone(),
                 area_sq_m: r.area_sq_m,
-                boundary: r.boundary.outer.vertices.iter().map(WirePoint::from).collect(),
+                boundary: r
+                    .boundary
+                    .outer
+                    .vertices
+                    .iter()
+                    .map(WirePoint::from)
+                    .collect(),
             })
             .collect(),
         parse_warnings,
@@ -171,14 +177,17 @@ pub fn parse_dxf_summary(dxf_bytes: &[u8]) -> Result<JsValue, JsValue> {
 mod tests {
     use super::*;
 
-    const SMALL_DXF: &str = include_str!(
-        "../../../tests/corpus/synthetic/small_floorplan_simple_r2000.dxf"
-    );
+    const SMALL_DXF: &str =
+        include_str!("../../../tests/corpus/synthetic/small_floorplan_simple_r2000.dxf");
 
     #[test]
     fn extract_wire_produces_walls_and_rooms() {
         let wire = extract_wire(SMALL_DXF.as_bytes()).unwrap();
-        assert!(wire.walls.len() >= 4, "small floorplan must have ≥4 walls, got {}", wire.walls.len());
+        assert!(
+            wire.walls.len() >= 4,
+            "small floorplan must have ≥4 walls, got {}",
+            wire.walls.len()
+        );
         // Every wall has a non-empty centerline.
         for w in &wire.walls {
             assert!(w.centerline.len() >= 2, "centerline must have ≥2 points");
@@ -199,11 +208,10 @@ mod tests {
     #[test]
     fn extract_wire_rejects_invalid_dxf_with_error_string() {
         let result = extract_wire(b"not a dxf file");
-        // Either parses (lenient mode) with empty result, or errors. Both are
-        // acceptable — the contract is "no panic, returns Result".
-        match result {
-            Ok(wire) => assert_eq!(wire.walls.len(), 0),
-            Err(_) => {} // ok, error surfaced to JS as string
+        // Either parses (lenient mode) with empty result, or errors. Both
+        // are acceptable — the contract is "no panic, returns Result".
+        if let Ok(wire) = result {
+            assert_eq!(wire.walls.len(), 0);
         }
     }
 }

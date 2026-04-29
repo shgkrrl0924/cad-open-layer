@@ -19,18 +19,22 @@ pub struct Pair {
     pub line_no: usize,
 }
 
-pub(crate) struct PairReader<R: BufRead> {
+pub struct PairReader<R: BufRead> {
     reader: R,
     line_no: usize,
     pushback: Option<Pair>,
 }
 
 impl<R: BufRead> PairReader<R> {
-    pub fn new(reader: R) -> Self {
-        Self { reader, line_no: 0, pushback: None }
+    pub const fn new(reader: R) -> Self {
+        Self {
+            reader,
+            line_no: 0,
+            pushback: None,
+        }
     }
 
-    pub fn line_no(&self) -> usize {
+    pub const fn line_no(&self) -> usize {
         self.line_no
     }
 
@@ -57,11 +61,16 @@ impl<R: BufRead> PairReader<R> {
         })?;
         let line_of_pair = self.line_no;
 
-        let value_line = self
-            .read_line_trimmed()?
-            .ok_or(CadError::UnexpectedEof { expected: "group value", line: self.line_no })?;
+        let value_line = self.read_line_trimmed()?.ok_or(CadError::UnexpectedEof {
+            expected: "group value",
+            line: self.line_no,
+        })?;
 
-        Ok(Some(Pair { code, value: value_line, line_no: line_of_pair }))
+        Ok(Some(Pair {
+            code,
+            value: value_line,
+            line_no: line_of_pair,
+        }))
     }
 
     fn read_line_trimmed(&mut self) -> Result<Option<String>, CadError> {

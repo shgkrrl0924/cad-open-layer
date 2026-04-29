@@ -1,4 +1,4 @@
-//! Verify that malformed numeric DXF values surface as ParseWarning instead
+//! Verify that malformed numeric DXF values surface as `ParseWarning` instead
 //! of being silently coerced to 0.0/0.
 //!
 //! Codex adversarial review (medium): "Invalid numeric DXF values are

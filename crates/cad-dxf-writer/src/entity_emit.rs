@@ -1,4 +1,4 @@
-//! Entity-specific DXF emission. Per the AutoCAD DXF spec each entity has a
+//! Entity-specific DXF emission. Per the `AutoCAD` DXF spec each entity has a
 //! fixed group-code recipe; this module encodes those recipes.
 
 use std::io::Write;
@@ -8,9 +8,14 @@ use cad_core::Entity;
 
 use crate::{format_f, write_pair_to};
 
-pub(crate) fn emit_entity<W: Write>(w: &mut W, e: &Entity) -> Result<()> {
+pub fn emit_entity<W: Write>(w: &mut W, e: &Entity) -> Result<()> {
     match e {
-        Entity::Line { p1, p2, layer, props } => {
+        Entity::Line {
+            p1,
+            p2,
+            layer,
+            props,
+        } => {
             write_pair_to(w, 0, "LINE")?;
             write_pair_to(w, 8, layer)?;
             write_pair_to(w, 100, "AcDbEntity")?;
@@ -23,7 +28,12 @@ pub(crate) fn emit_entity<W: Write>(w: &mut W, e: &Entity) -> Result<()> {
             write_pair_to(w, 31, &format_f(p2.z))?;
             emit_extras(w, props)?;
         }
-        Entity::Circle { center, radius, layer, props } => {
+        Entity::Circle {
+            center,
+            radius,
+            layer,
+            props,
+        } => {
             write_pair_to(w, 0, "CIRCLE")?;
             write_pair_to(w, 8, layer)?;
             write_pair_to(w, 100, "AcDbEntity")?;
@@ -34,7 +44,14 @@ pub(crate) fn emit_entity<W: Write>(w: &mut W, e: &Entity) -> Result<()> {
             write_pair_to(w, 40, &format_f(*radius))?;
             emit_extras(w, props)?;
         }
-        Entity::Arc { center, radius, start_angle, end_angle, layer, props } => {
+        Entity::Arc {
+            center,
+            radius,
+            start_angle,
+            end_angle,
+            layer,
+            props,
+        } => {
             write_pair_to(w, 0, "ARC")?;
             write_pair_to(w, 8, layer)?;
             write_pair_to(w, 100, "AcDbEntity")?;
@@ -48,7 +65,13 @@ pub(crate) fn emit_entity<W: Write>(w: &mut W, e: &Entity) -> Result<()> {
             write_pair_to(w, 51, &format_f(end_angle.to_degrees()))?;
             emit_extras(w, props)?;
         }
-        Entity::LwPolyline { vertices, bulges, closed, layer, props } => {
+        Entity::LwPolyline {
+            vertices,
+            bulges,
+            closed,
+            layer,
+            props,
+        } => {
             write_pair_to(w, 0, "LWPOLYLINE")?;
             write_pair_to(w, 8, layer)?;
             write_pair_to(w, 100, "AcDbEntity")?;
@@ -65,7 +88,14 @@ pub(crate) fn emit_entity<W: Write>(w: &mut W, e: &Entity) -> Result<()> {
             }
             emit_extras(w, props)?;
         }
-        Entity::Text { position, value, height, rotation, layer, props } => {
+        Entity::Text {
+            position,
+            value,
+            height,
+            rotation,
+            layer,
+            props,
+        } => {
             write_pair_to(w, 0, "TEXT")?;
             write_pair_to(w, 8, layer)?;
             write_pair_to(w, 100, "AcDbEntity")?;
@@ -81,7 +111,15 @@ pub(crate) fn emit_entity<W: Write>(w: &mut W, e: &Entity) -> Result<()> {
             write_pair_to(w, 7, "STANDARD")?;
             emit_extras(w, props)?;
         }
-        Entity::MText { position, value, height, rotation, attachment_point, layer, props } => {
+        Entity::MText {
+            position,
+            value,
+            height,
+            rotation,
+            attachment_point,
+            layer,
+            props,
+        } => {
             write_pair_to(w, 0, "MTEXT")?;
             write_pair_to(w, 8, layer)?;
             write_pair_to(w, 100, "AcDbEntity")?;
@@ -90,14 +128,23 @@ pub(crate) fn emit_entity<W: Write>(w: &mut W, e: &Entity) -> Result<()> {
             write_pair_to(w, 20, &format_f(position.y))?;
             write_pair_to(w, 30, &format_f(position.z))?;
             write_pair_to(w, 40, &format_f(*height))?;
-            write_pair_to(w, 71, &format!("{}", attachment_point))?;
+            write_pair_to(w, 71, &format!("{attachment_point}"))?;
             write_pair_to(w, 1, value)?;
             if rotation.abs() > 1e-9 {
                 write_pair_to(w, 50, &format_f(rotation.to_degrees()))?;
             }
             emit_extras(w, props)?;
         }
-        Entity::Insert { block_name, position, scale_x, scale_y, scale_z, rotation, layer, props } => {
+        Entity::Insert {
+            block_name,
+            position,
+            scale_x,
+            scale_y,
+            scale_z,
+            rotation,
+            layer,
+            props,
+        } => {
             write_pair_to(w, 0, "INSERT")?;
             write_pair_to(w, 8, layer)?;
             write_pair_to(w, 100, "AcDbEntity")?;
@@ -162,7 +209,7 @@ pub(crate) fn emit_entity<W: Write>(w: &mut W, e: &Entity) -> Result<()> {
 
 fn emit_extras<W: Write>(w: &mut W, props: &cad_core::EntityProps) -> Result<()> {
     if let Some(c) = props.color {
-        write_pair_to(w, 62, &format!("{}", c))?;
+        write_pair_to(w, 62, &format!("{c}"))?;
     }
     if let Some(t) = &props.linetype {
         write_pair_to(w, 6, t)?;

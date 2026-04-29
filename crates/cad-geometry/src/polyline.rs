@@ -10,7 +10,7 @@ pub struct Polyline {
 
 impl Polyline {
     #[must_use]
-    pub fn new(vertices: Vec<Point>, closed: bool) -> Self {
+    pub const fn new(vertices: Vec<Point>, closed: bool) -> Self {
         Self { vertices, closed }
     }
 

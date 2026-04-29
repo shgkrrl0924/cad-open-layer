@@ -3,7 +3,7 @@
 #[derive(Debug, Clone)]
 pub struct LayerDef {
     pub name: String,
-    /// AutoCAD color index (1=red, 2=yellow, 3=green, 4=cyan, 5=blue,
+    /// `AutoCAD` color index (1=red, 2=yellow, 3=green, 4=cyan, 5=blue,
     /// 6=magenta, 7=white, 8=grey, 9=light grey).
     pub color: i16,
     pub linetype: String,

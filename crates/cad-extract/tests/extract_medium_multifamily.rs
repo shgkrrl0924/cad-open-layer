@@ -47,7 +47,11 @@ fn full_pipeline_runs_on_medium_floorplan() {
     );
 
     // Sanity checks — counts should be substantial.
-    assert!(plan.walls.len() > 50, "expected many walls (got {})", plan.walls.len());
+    assert!(
+        plan.walls.len() > 50,
+        "expected many walls (got {})",
+        plan.walls.len()
+    );
     assert!(plan.openings.len() > 100, "expected many openings");
 }
 
@@ -59,11 +63,11 @@ fn medium_door_count_matches_golden_range() {
         .iter()
         .filter(|o| o.kind == OpeningKind::Door)
         .count();
-    eprintln!("Detected {} doors (golden: 1296)", doors);
+    eprintln!("Detected {doors} doors (golden: 1296)");
     // Allow ±10% slack for edge cases (some doors near junctions might fail
     // the LINE+ARC matcher).
     assert!(
-        doors >= 1100 && doors <= 1400,
+        (1100..=1400).contains(&doors),
         "doors {doors} outside expected 1100-1400 range"
     );
 }
@@ -76,9 +80,9 @@ fn medium_window_count_matches_golden_range() {
         .iter()
         .filter(|o| o.kind == OpeningKind::Window)
         .count();
-    eprintln!("Detected {} windows (golden: 972)", windows);
+    eprintln!("Detected {windows} windows (golden: 972)");
     assert!(
-        windows >= 800 && windows <= 1100,
+        (800..=1100).contains(&windows),
         "windows {windows} outside expected 800-1100 range"
     );
 }
@@ -109,7 +113,10 @@ fn medium_grid_has_19_x_axes_and_19_y_axes() {
 #[test]
 fn medium_room_count_indicates_multifamily_scale() {
     let plan = full_extraction();
-    eprintln!("Detected {} rooms (golden range: 400-600)", plan.rooms.len());
+    eprintln!(
+        "Detected {} rooms (golden range: 400-600)",
+        plan.rooms.len()
+    );
     // Multifamily building has many rooms. Stage 1 algorithm may not
     // detect every cell — some unbounded faces, some too-small artifacts.
     // Verify it's at least at "multifamily scale" (>50 rooms).

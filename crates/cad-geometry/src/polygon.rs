@@ -12,15 +12,22 @@ pub struct Polygon {
 
 impl Polygon {
     #[must_use]
-    pub fn new(outer: Polyline) -> Self {
-        Self { outer, holes: vec![] }
+    pub const fn new(outer: Polyline) -> Self {
+        Self {
+            outer,
+            holes: vec![],
+        }
     }
 
     /// Compute area via shoelace formula. Always non-negative.
     #[must_use]
     pub fn area(&self) -> f64 {
         let outer = signed_area(&self.outer.vertices).abs();
-        let holes: f64 = self.holes.iter().map(|h| signed_area(&h.vertices).abs()).sum();
+        let holes: f64 = self
+            .holes
+            .iter()
+            .map(|h| signed_area(&h.vertices).abs())
+            .sum();
         outer - holes
     }
 
@@ -46,7 +53,9 @@ pub fn signed_area(vertices: &[Point]) -> f64 {
     let mut sum = 0.0;
     for i in 0..n {
         let j = (i + 1) % n;
-        sum += vertices[i].x * vertices[j].y - vertices[j].x * vertices[i].y;
+        sum += vertices[i]
+            .x
+            .mul_add(vertices[j].y, -(vertices[j].x * vertices[i].y));
     }
     sum / 2.0
 }

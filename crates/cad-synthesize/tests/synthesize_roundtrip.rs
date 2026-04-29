@@ -1,5 +1,5 @@
 //! End-to-end round trip test:
-//! parse(small_dxf) → extract → synthesize → parse → extract
+//! `parse(small_dxf)` → extract → synthesize → parse → extract
 //! and verify the two extracted Floorplans are semantically equivalent.
 
 use std::fs::File;
@@ -9,8 +9,7 @@ use cad_dxf_parser::parse_all;
 use cad_extract::extract_floorplan;
 use cad_synthesize::{floorplan_to_dxf, SynthesizeConfig};
 
-const SMALL_DXF_PATH: &str =
-    "../../tests/corpus/synthetic/small_floorplan_simple_r2000.dxf";
+const SMALL_DXF_PATH: &str = "../../tests/corpus/synthetic/small_floorplan_simple_r2000.dxf";
 
 #[test]
 fn round_trip_preserves_wall_count() {
@@ -45,13 +44,19 @@ fn round_trip_preserves_room_labels() {
     let original = read_floorplan(SMALL_DXF_PATH);
     let regenerated = round_trip(&original);
 
-    let original_labels: std::collections::HashSet<_> =
-        original.rooms.iter().filter_map(|r| r.label.clone()).collect();
-    let regen_labels: std::collections::HashSet<_> =
-        regenerated.rooms.iter().filter_map(|r| r.label.clone()).collect();
+    let original_labels: std::collections::HashSet<_> = original
+        .rooms
+        .iter()
+        .filter_map(|r| r.label.clone())
+        .collect();
+    let regen_labels: std::collections::HashSet<_> = regenerated
+        .rooms
+        .iter()
+        .filter_map(|r| r.label.clone())
+        .collect();
 
-    eprintln!("Original labels: {:?}", original_labels);
-    eprintln!("Regenerated labels: {:?}", regen_labels);
+    eprintln!("Original labels: {original_labels:?}");
+    eprintln!("Regenerated labels: {regen_labels:?}");
 
     // The four named rooms (LIVING / KITCHEN / BED 1 / BED 2) should
     // round-trip; BATH gets absorbed into KITCHEN per source DXF anomaly.
@@ -98,7 +103,10 @@ fn round_trip_preserves_opening_count() {
 
     // After Task #29, INSERT-based opening detection is supported, so
     // synthesis output should round-trip the full opening count.
-    assert_eq!(regen_doors, 6, "round-trip should preserve 6 doors via INSERT detection");
+    assert_eq!(
+        regen_doors, 6,
+        "round-trip should preserve 6 doors via INSERT detection"
+    );
     assert_eq!(regen_windows, 6, "round-trip should preserve 6 windows");
 }
 

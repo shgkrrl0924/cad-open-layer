@@ -14,8 +14,14 @@ fn parses_small_floorplan_without_error() {
     let reader = BufReader::new(file);
     let doc = parse_all(reader).expect("parse should succeed");
 
-    assert!(!doc.entities.is_empty(), "should produce at least one entity");
-    assert!(doc.header.contains_key("$ACADVER"), "should capture $ACADVER variable");
+    assert!(
+        !doc.entities.is_empty(),
+        "should produce at least one entity"
+    );
+    assert!(
+        doc.header.contains_key("$ACADVER"),
+        "should capture $ACADVER variable"
+    );
 }
 
 #[test]
@@ -70,7 +76,10 @@ fn small_floorplan_entity_counts_match_golden() {
     }
 
     assert_eq!(mtexts, 0, "small DXF has no MTEXT");
-    assert_eq!(dimensions, 0, "small DXF uses LINE+ARC for dimension drawing, not DIMENSION entity");
+    assert_eq!(
+        dimensions, 0,
+        "small DXF uses LINE+ARC for dimension drawing, not DIMENSION entity"
+    );
 
     // From manual analysis of the small DXF (see golden JSON):
     // - Plenty of LINEs: 4 outer walls + 4 inner walls + 4 partition lines + 18 tick marks
@@ -81,10 +90,16 @@ fn small_floorplan_entity_counts_match_golden() {
     // - 3 CIRCLEs (furniture: stove burners + table).
     assert!(lines > 50, "expected many LINE entities (got {lines})");
     assert_eq!(arcs, 6, "expected 6 ARC entities (door swings)");
-    assert!(texts >= 13, "expected at least 13 TEXT entities (got {texts})");
+    assert!(
+        texts >= 13,
+        "expected at least 13 TEXT entities (got {texts})"
+    );
     assert_eq!(circles, 3, "expected 3 CIRCLE entities (furniture)");
     assert_eq!(lwpolys, 0, "small DXF has no LWPOLYLINE");
-    assert_eq!(inserts, 0, "small DXF has no INSERT (uses LINE+ARC for doors)");
+    assert_eq!(
+        inserts, 0,
+        "small DXF has no INSERT (uses LINE+ARC for doors)"
+    );
     assert_eq!(other, 0, "no unrecognized entity types");
 }
 

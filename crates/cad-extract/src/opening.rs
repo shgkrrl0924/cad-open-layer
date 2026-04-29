@@ -2,7 +2,7 @@
 //!
 //! Two detection strategies depending on DXF convention:
 //!
-//! 1. **Door = LINE + ARC pair** (synthetic corpus + many AutoCAD plans):
+//! 1. **Door = LINE + ARC pair** (synthetic corpus + many `AutoCAD` plans):
 //!    one LINE is the open leaf, one ARC is the swing trail. Hinge = ARC
 //!    center = LINE endpoint. Door width = ARC radius = LINE length.
 //!
@@ -16,7 +16,7 @@
 //!
 //! 4. **Window = INSERT block reference** (alternate convention).
 //!
-//! For Stage 1 PoC the synthetic corpus uses conventions 1 and 3.
+//! For Stage 1 `PoC` the synthetic corpus uses conventions 1 and 3.
 
 use cad_core::error::Result;
 use cad_core::{Entity, LayerName, Point};
@@ -41,12 +41,7 @@ pub struct OpeningConfig {
 impl Default for OpeningConfig {
     fn default() -> Self {
         Self {
-            door_layers: vec![
-                "DOORS".into(),
-                "DOOR".into(),
-                "A-DOOR".into(),
-                "문".into(),
-            ],
+            door_layers: vec!["DOORS".into(), "DOOR".into(), "A-DOOR".into(), "문".into()],
             window_layers: vec![
                 "WINDOWS".into(),
                 "WINDOW".into(),
@@ -123,7 +118,11 @@ fn detect_openings_from_inserts(
 
             let swing = match kind {
                 OpeningKind::Door => Some(DoorSwing {
-                    hinge_side: if rotation.sin() >= 0.0 { Side::Left } else { Side::Right },
+                    hinge_side: if rotation.sin() >= 0.0 {
+                        Side::Left
+                    } else {
+                        Side::Right
+                    },
                     opens_inward: true,
                 }),
                 _ => None,
@@ -171,7 +170,7 @@ fn parse_block_width(block_name: &str) -> f64 {
     let suffix: String = block_name
         .chars()
         .rev()
-        .take_while(|c| c.is_ascii_digit())
+        .take_while(char::is_ascii_digit)
         .collect();
     let suffix: String = suffix.chars().rev().collect();
     suffix.parse::<f64>().unwrap_or(0.0)
@@ -202,9 +201,14 @@ fn detect_doors_line_arc(
 
     for e in entities {
         match e {
-            Entity::Arc { center, radius, start_angle, end_angle, layer, .. }
-                if config.door_layers.iter().any(|l| l == layer) =>
-            {
+            Entity::Arc {
+                center,
+                radius,
+                start_angle,
+                end_angle,
+                layer,
+                ..
+            } if config.door_layers.iter().any(|l| l == layer) => {
                 arcs.push(ArcView {
                     center: *center,
                     radius: *radius,
@@ -212,9 +216,7 @@ fn detect_doors_line_arc(
                     end_angle: *end_angle,
                 });
             }
-            Entity::Line { p1, p2, layer, .. }
-                if config.door_layers.iter().any(|l| l == layer) =>
-            {
+            Entity::Line { p1, p2, layer, .. } if config.door_layers.iter().any(|l| l == layer) => {
                 lines.push(LineView { a: *p1, b: *p2 });
             }
             _ => {}
@@ -236,7 +238,11 @@ fn detect_doors_line_arc(
 
         // Swing: based on arc start angle direction.
         let swing = Some(DoorSwing {
-            hinge_side: if arc.start_angle.sin() >= 0.0 { Side::Left } else { Side::Right },
+            hinge_side: if arc.start_angle.sin() >= 0.0 {
+                Side::Left
+            } else {
+                Side::Right
+            },
             opens_inward: arc.end_angle > arc.start_angle,
         });
 
@@ -291,8 +297,7 @@ fn detect_windows_parallel_pair(
             let (a1, a2) = window_lines[i];
             let (b1, b2) = window_lines[j];
             if let Some((center, width)) = check_window_pair(a1, a2, b1, b2, config) {
-                let host =
-                    find_host_wall(&center, walls, config.max_offset_from_wall);
+                let host = find_host_wall(&center, walls, config.max_offset_from_wall);
                 let position = host.map_or(0.0, |w| position_along_wall(&center, w));
                 result.push(Opening {
                     id: *next_id,
@@ -336,7 +341,7 @@ fn check_window_pair(
         return None;
     }
     // Direction-agnostic parallel check via cross product magnitude.
-    let cross = dir_a_x * dir_b_y - dir_a_y * dir_b_x;
+    let cross = dir_a_x.mul_add(dir_b_y, -(dir_a_y * dir_b_x));
     let cross_normalized = cross.abs() / (len_a * len_b);
     if cross_normalized > 0.05 {
         // ~3° off
@@ -356,9 +361,13 @@ fn check_window_pair(
     }
 
     // Center of the pair (midpoint of midpoints).
-    let mid_a = Point::new((a1.x + a2.x) / 2.0, (a1.y + a2.y) / 2.0, 0.0);
-    let mid_b = Point::new((b1.x + b2.x) / 2.0, (b1.y + b2.y) / 2.0, 0.0);
-    let center = Point::new((mid_a.x + mid_b.x) / 2.0, (mid_a.y + mid_b.y) / 2.0, 0.0);
+    let mid_a = Point::new(f64::midpoint(a1.x, a2.x), f64::midpoint(a1.y, a2.y), 0.0);
+    let mid_b = Point::new(f64::midpoint(b1.x, b2.x), f64::midpoint(b1.y, b2.y), 0.0);
+    let center = Point::new(
+        f64::midpoint(mid_a.x, mid_b.x),
+        f64::midpoint(mid_a.y, mid_b.y),
+        0.0,
+    );
 
     Some((center, len_a))
 }
@@ -370,21 +379,17 @@ fn perp_dist_to_line(p: Point, line_a: Point, line_b: Point) -> f64 {
     if len < 1e-9 {
         return p.distance(&line_a);
     }
-    let cross = (p.x - line_a.x) * ab_y - (p.y - line_a.y) * ab_x;
+    let cross = (p.x - line_a.x).mul_add(ab_y, -((p.y - line_a.y) * ab_x));
     cross.abs() / len
 }
 
 /// Find the wall whose centerline passes closest to `point`, within
 /// `max_offset`. Returns None if none qualify.
-fn find_host_wall<'a>(
-    point: &Point,
-    walls: &'a [Wall],
-    max_offset: f64,
-) -> Option<&'a Wall> {
+fn find_host_wall<'a>(point: &Point, walls: &'a [Wall], max_offset: f64) -> Option<&'a Wall> {
     let mut best: Option<(&Wall, f64)> = None;
     for w in walls {
         let dist = wall_centerline_distance(point, w);
-        if dist <= max_offset && best.map_or(true, |(_, d)| dist < d) {
+        if dist <= max_offset && best.is_none_or(|(_, d)| dist < d) {
             best = Some((w, dist));
         }
     }
@@ -413,9 +418,13 @@ fn perp_dist_to_segment(p: Point, a: Point, b: Point) -> f64 {
     if len_sq < 1e-12 {
         return p.distance(&a);
     }
-    let t = ((p.x - a.x) * ab_x + (p.y - a.y) * ab_y) / len_sq;
+    let t = (p.x - a.x).mul_add(ab_x, (p.y - a.y) * ab_y) / len_sq;
     let t_clamped = t.clamp(0.0, 1.0);
-    let proj = Point::new(a.x + ab_x * t_clamped, a.y + ab_y * t_clamped, 0.0);
+    let proj = Point::new(
+        ab_x.mul_add(t_clamped, a.x),
+        ab_y.mul_add(t_clamped, a.y),
+        0.0,
+    );
     p.distance(&proj)
 }
 
@@ -440,9 +449,13 @@ fn position_along_wall(point: &Point, wall: &Wall) -> f64 {
         if len_sq < 1e-12 {
             continue;
         }
-        let t = ((point.x - a.x) * ab_x + (point.y - a.y) * ab_y) / len_sq;
+        let t = (point.x - a.x).mul_add(ab_x, (point.y - a.y) * ab_y) / len_sq;
         let t_clamped = t.clamp(0.0, 1.0);
-        let proj = Point::new(a.x + ab_x * t_clamped, a.y + ab_y * t_clamped, 0.0);
+        let proj = Point::new(
+            ab_x.mul_add(t_clamped, a.x),
+            ab_y.mul_add(t_clamped, a.y),
+            0.0,
+        );
         let dist = point.distance(&proj);
         if dist < best_dist {
             best_dist = dist;
@@ -473,13 +486,22 @@ mod tests {
         }
     }
     fn line(a: Point, b: Point, layer: &str) -> Entity {
-        Entity::Line { p1: a, p2: b, layer: layer.into(), props: EntityProps::default() }
+        Entity::Line {
+            p1: a,
+            p2: b,
+            layer: layer.into(),
+            props: EntityProps::default(),
+        }
     }
 
     #[test]
     fn detects_door_from_line_plus_arc_pair() {
         let entities = vec![
-            line(Point::new(4000.0, 1200.0, 0.0), Point::new(4800.0, 1200.0, 0.0), "DOORS"),
+            line(
+                Point::new(4000.0, 1200.0, 0.0),
+                Point::new(4800.0, 1200.0, 0.0),
+                "DOORS",
+            ),
             arc(Point::new(4000.0, 1200.0, 0.0), 800.0, 0.0, 90.0, "DOORS"),
         ];
         let walls = vec![]; // no host walls — should still detect the door (with host=None)
@@ -493,8 +515,16 @@ mod tests {
     #[test]
     fn detects_window_from_parallel_pair() {
         let entities = vec![
-            line(Point::new(1000.0, 6500.0, 0.0), Point::new(3000.0, 6500.0, 0.0), "WINDOWS"),
-            line(Point::new(1000.0, 6580.0, 0.0), Point::new(3000.0, 6580.0, 0.0), "WINDOWS"),
+            line(
+                Point::new(1000.0, 6500.0, 0.0),
+                Point::new(3000.0, 6500.0, 0.0),
+                "WINDOWS",
+            ),
+            line(
+                Point::new(1000.0, 6580.0, 0.0),
+                Point::new(3000.0, 6580.0, 0.0),
+                "WINDOWS",
+            ),
         ];
         let walls = vec![];
         let openings = detect_openings(&entities, &walls, &OpeningConfig::default()).unwrap();

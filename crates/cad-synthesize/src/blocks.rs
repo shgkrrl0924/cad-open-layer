@@ -3,7 +3,7 @@
 //!
 //! These blocks are emitted into the DXF BLOCKS section so that INSERT
 //! references in the ENTITIES section resolve correctly when the file is
-//! opened in AutoCAD or compatible viewers.
+//! opened in `AutoCAD` or compatible viewers.
 //!
 //! Conventions:
 //! - All blocks defined at origin (0, 0, 0).
@@ -208,7 +208,13 @@ mod tests {
                 assert!((p1.x - 0.0).abs() < 1e-6);
                 assert!((p2.x - 800.0).abs() < 1e-6);
             }
-            if let Entity::Arc { radius, start_angle, end_angle, .. } = e {
+            if let Entity::Arc {
+                radius,
+                start_angle,
+                end_angle,
+                ..
+            } = e
+            {
                 assert!((radius - 800.0).abs() < 1e-6);
                 assert!((start_angle - 0.0).abs() < 1e-6);
                 assert!((end_angle - PI / 2.0).abs() < 1e-6);
@@ -247,9 +253,18 @@ mod tests {
 
     #[test]
     fn nearest_window_block_picks_closest_size() {
-        assert_eq!(nearest_window_block(2000.0), (1800, "WINDOW_1800".to_string()));
-        assert_eq!(nearest_window_block(1700.0), (1800, "WINDOW_1800".to_string()));
-        assert_eq!(nearest_window_block(1100.0), (1200, "WINDOW_1200".to_string()));
+        assert_eq!(
+            nearest_window_block(2000.0),
+            (1800, "WINDOW_1800".to_string())
+        );
+        assert_eq!(
+            nearest_window_block(1700.0),
+            (1800, "WINDOW_1800".to_string())
+        );
+        assert_eq!(
+            nearest_window_block(1100.0),
+            (1200, "WINDOW_1200".to_string())
+        );
     }
 
     #[test]

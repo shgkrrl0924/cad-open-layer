@@ -89,7 +89,7 @@ pub fn check_equivalence(
     }
 }
 
-/// CleanupMetric — automatically computed proxy for "no redraw" criterion.
+/// `CleanupMetric` — automatically computed proxy for "no redraw" criterion.
 #[derive(Debug, Clone, Default)]
 pub struct CleanupMetric {
     pub layer_renames: u32,

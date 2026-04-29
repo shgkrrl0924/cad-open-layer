@@ -36,10 +36,14 @@ fn main() -> io::Result<()> {
         }
         let resp = match serde_json::from_str::<JsonRpcRequest>(trimmed) {
             Ok(req) => handle_request(req),
-            Err(e) => JsonRpcResponse::err(serde_json::Value::Null, -32700, format!("parse error: {e}")),
+            Err(e) => {
+                JsonRpcResponse::err(serde_json::Value::Null, -32700, format!("parse error: {e}"))
+            }
         };
-        let bytes = serde_json::to_vec(&resp)
-            .unwrap_or_else(|e| format!(r#"{{"jsonrpc":"2.0","error":{{"code":-32603,"message":"serialize: {e}"}}}}"#).into_bytes());
+        let bytes = serde_json::to_vec(&resp).unwrap_or_else(|e| {
+            format!(r#"{{"jsonrpc":"2.0","error":{{"code":-32603,"message":"serialize: {e}"}}}}"#)
+                .into_bytes()
+        });
         out.write_all(&bytes)?;
         out.write_all(b"\n")?;
         out.flush()?;

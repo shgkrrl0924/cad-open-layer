@@ -52,5 +52,11 @@ pub fn extract_floorplan(entities: &[Entity]) -> Result<Floorplan> {
     let grid_opt = grid::extract_grid(entities, &grid::GridConfig::default())?;
     let grids = grid_opt.map(|g| vec![g]).unwrap_or_default();
 
-    Ok(Floorplan { walls, openings, rooms, dimensions, grids })
+    Ok(Floorplan {
+        walls,
+        openings,
+        rooms,
+        dimensions,
+        grids,
+    })
 }

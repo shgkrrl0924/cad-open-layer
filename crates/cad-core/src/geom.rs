@@ -1,4 +1,4 @@
-//! Geometric primitives: Point, Vec2, Vec3, Segment, BoundingBox.
+//! Geometric primitives: Point, Vec2, Vec3, Segment, `BoundingBox`.
 
 /// 3D point in WCS (World Coordinate System).
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -45,7 +45,10 @@ impl Vec2 {
 
     #[must_use]
     pub fn from_points(a: &Point, b: &Point) -> Self {
-        Self { x: b.x - a.x, y: b.y - a.y }
+        Self {
+            x: b.x - a.x,
+            y: b.y - a.y,
+        }
     }
 
     #[must_use]
@@ -57,7 +60,10 @@ impl Vec2 {
     pub fn normalize(&self) -> Self {
         let len = self.length();
         if len > f64::EPSILON {
-            Self { x: self.x / len, y: self.y / len }
+            Self {
+                x: self.x / len,
+                y: self.y / len,
+            }
         } else {
             *self
         }
@@ -75,7 +81,10 @@ impl Vec2 {
 
     #[must_use]
     pub fn perpendicular(&self) -> Self {
-        Self { x: -self.y, y: self.x }
+        Self {
+            x: -self.y,
+            y: self.x,
+        }
     }
 
     #[must_use]
@@ -93,7 +102,11 @@ pub struct Vec3 {
 }
 
 impl Vec3 {
-    pub const Z_AXIS: Self = Self { x: 0.0, y: 0.0, z: 1.0 };
+    pub const Z_AXIS: Self = Self {
+        x: 0.0,
+        y: 0.0,
+        z: 1.0,
+    };
 
     #[must_use]
     pub const fn new(x: f64, y: f64, z: f64) -> Self {
@@ -117,9 +130,9 @@ impl Segment {
     #[must_use]
     pub fn midpoint(&self) -> Point {
         Point {
-            x: (self.a.x + self.b.x) / 2.0,
-            y: (self.a.y + self.b.y) / 2.0,
-            z: (self.a.z + self.b.z) / 2.0,
+            x: f64::midpoint(self.a.x, self.b.x),
+            y: f64::midpoint(self.a.y, self.b.y),
+            z: f64::midpoint(self.a.z, self.b.z),
         }
     }
 

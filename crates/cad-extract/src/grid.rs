@@ -33,11 +33,13 @@ pub fn extract_grid(entities: &[Entity], config: &GridConfig) -> Result<Option<G
     let lines: Vec<(Point, Point)> = entities
         .iter()
         .filter_map(|e| match e {
-            Entity::Line { p1, p2, layer, .. }
-                if config.layers.iter().any(|l| l == layer) =>
-            {
+            Entity::Line { p1, p2, layer, .. } if config.layers.iter().any(|l| l == layer) => {
                 let len = p1.distance(p2);
-                if len >= config.min_length { Some((*p1, *p2)) } else { None }
+                if len >= config.min_length {
+                    Some((*p1, *p2))
+                } else {
+                    None
+                }
             }
             _ => None,
         })
@@ -51,11 +53,12 @@ pub fn extract_grid(entities: &[Entity], config: &GridConfig) -> Result<Option<G
     let labels: Vec<(Point, String)> = entities
         .iter()
         .filter_map(|e| match e {
-            Entity::Text { position, value, layer, .. }
-                if config.layers.iter().any(|l| l == layer) =>
-            {
-                Some((*position, value.clone()))
-            }
+            Entity::Text {
+                position,
+                value,
+                layer,
+                ..
+            } if config.layers.iter().any(|l| l == layer) => Some((*position, value.clone())),
             _ => None,
         })
         .collect();
@@ -74,12 +77,12 @@ pub fn extract_grid(entities: &[Entity], config: &GridConfig) -> Result<Option<G
         }
         // Vertical (X axis) — line direction mostly along Y.
         if dx <= len * config.parallel_eps_rad.sin().abs().max(0.01) {
-            let const_x = (a.x + b.x) / 2.0;
+            let const_x = f64::midpoint(a.x, b.x);
             x_axes_pos.push((const_x, *a, *b));
         }
         // Horizontal (Y axis) — line direction mostly along X.
         else if dy <= len * config.parallel_eps_rad.sin().abs().max(0.01) {
-            let const_y = (a.y + b.y) / 2.0;
+            let const_y = f64::midpoint(a.y, b.y);
             y_axes_pos.push((const_y, *a, *b));
         }
     }
@@ -95,7 +98,11 @@ pub fn extract_grid(entities: &[Entity], config: &GridConfig) -> Result<Option<G
         return Ok(None);
     }
 
-    Ok(Some(Grid { id: 1 as GridId, x_axes, y_axes }))
+    Ok(Some(Grid {
+        id: 1 as GridId,
+        x_axes,
+        y_axes,
+    }))
 }
 
 fn build_axes(
@@ -107,9 +114,10 @@ fn build_axes(
     let mut deduped: Vec<(f64, Point, Point)> = vec![];
     let snap = 50.0_f64; // 50mm dedupe tolerance
     for entry in raw {
-        if deduped.last().map_or(true, |last: &(f64, Point, Point)| {
-            (last.0 - entry.0).abs() > snap
-        }) {
+        if deduped
+            .last()
+            .is_none_or(|last: &(f64, Point, Point)| (last.0 - entry.0).abs() > snap)
+        {
             deduped.push(*entry);
         }
     }
@@ -121,27 +129,32 @@ fn build_axes(
             // "label end" (typical convention in architectural plans).
             // For horizontal (Y-axis) lines, pick the end with smaller X.
             let label_end = if is_vertical {
-                if start.y < end.y { start } else { end }
+                if start.y < end.y {
+                    start
+                } else {
+                    end
+                }
             } else if start.x < end.x {
                 start
             } else {
                 end
             };
             let label = nearest_label(&label_end, labels, config.label_search_radius);
-            GridLine { position: pos, label, start, end }
+            GridLine {
+                position: pos,
+                label,
+                start,
+                end,
+            }
         })
         .collect()
 }
 
-fn nearest_label(
-    near: &Point,
-    labels: &[(Point, String)],
-    radius: f64,
-) -> Option<String> {
+fn nearest_label(near: &Point, labels: &[(Point, String)], radius: f64) -> Option<String> {
     let mut best: Option<(f64, &String)> = None;
     for (pos, value) in labels {
         let d = pos.distance(near);
-        if d <= radius && best.map_or(true, |(bd, _)| d < bd) {
+        if d <= radius && best.is_none_or(|(bd, _)| d < bd) {
             best = Some((d, value));
         }
     }
@@ -154,7 +167,12 @@ mod tests {
     use cad_core::EntityProps;
 
     fn line(a: Point, b: Point, layer: &str) -> Entity {
-        Entity::Line { p1: a, p2: b, layer: layer.into(), props: EntityProps::default() }
+        Entity::Line {
+            p1: a,
+            p2: b,
+            layer: layer.into(),
+            props: EntityProps::default(),
+        }
     }
     fn text(pos: Point, value: &str, layer: &str) -> Entity {
         Entity::Text {
@@ -170,16 +188,34 @@ mod tests {
     #[test]
     fn extracts_simple_2x2_grid() {
         let entities = vec![
-            line(Point::new(0.0, -500.0, 0.0), Point::new(0.0, 7000.0, 0.0), "GRID"),
-            line(Point::new(10000.0, -500.0, 0.0), Point::new(10000.0, 7000.0, 0.0), "GRID"),
-            line(Point::new(-500.0, 0.0, 0.0), Point::new(10500.0, 0.0, 0.0), "GRID"),
-            line(Point::new(-500.0, 6500.0, 0.0), Point::new(10500.0, 6500.0, 0.0), "GRID"),
+            line(
+                Point::new(0.0, -500.0, 0.0),
+                Point::new(0.0, 7000.0, 0.0),
+                "GRID",
+            ),
+            line(
+                Point::new(10000.0, -500.0, 0.0),
+                Point::new(10000.0, 7000.0, 0.0),
+                "GRID",
+            ),
+            line(
+                Point::new(-500.0, 0.0, 0.0),
+                Point::new(10500.0, 0.0, 0.0),
+                "GRID",
+            ),
+            line(
+                Point::new(-500.0, 6500.0, 0.0),
+                Point::new(10500.0, 6500.0, 0.0),
+                "GRID",
+            ),
             text(Point::new(-80.0, -900.0, 0.0), "A", "GRID"),
             text(Point::new(9920.0, -900.0, 0.0), "B", "GRID"),
             text(Point::new(-900.0, -80.0, 0.0), "1", "GRID"),
             text(Point::new(-900.0, 6420.0, 0.0), "2", "GRID"),
         ];
-        let g = extract_grid(&entities, &GridConfig::default()).unwrap().unwrap();
+        let g = extract_grid(&entities, &GridConfig::default())
+            .unwrap()
+            .unwrap();
         assert_eq!(g.x_axes.len(), 2, "expected 2 X-axes");
         assert_eq!(g.y_axes.len(), 2, "expected 2 Y-axes");
         let labels_x: Vec<_> = g.x_axes.iter().filter_map(|l| l.label.clone()).collect();

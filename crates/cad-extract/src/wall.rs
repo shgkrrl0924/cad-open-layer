@@ -35,8 +35,8 @@ impl Default for HierarchyConfig {
 /// 1. Layer-name contains EXTR / 외벽 → Exterior
 /// 2. Layer-name contains INTR / 내벽 → Interior
 /// 3. Layer-name contains PART / 파티션 → Partition
-/// 4. thickness ≥ exterior_threshold → Exterior
-/// 5. thickness ≥ interior_threshold → Interior
+/// 4. thickness ≥ `exterior_threshold` → Exterior
+/// 5. thickness ≥ `interior_threshold` → Interior
 /// 6. otherwise → Partition
 pub fn classify_walls(walls: &mut [cad_semantic::Wall], config: &HierarchyConfig) {
     for w in walls.iter_mut() {
@@ -119,7 +119,7 @@ pub struct ParallelLinePairExtractor {
 }
 
 impl ParallelLinePairExtractor {
-    pub fn new(config: WallConfig) -> Self {
+    pub const fn new(config: WallConfig) -> Self {
         Self { config }
     }
 }
@@ -128,7 +128,6 @@ impl ParallelLinePairExtractor {
 struct LineSeg {
     a: Point,
     b: Point,
-    layer_idx: usize,
 }
 
 impl LineSeg {
@@ -153,13 +152,13 @@ impl LineSeg {
 impl WallExtractor for ParallelLinePairExtractor {
     fn extract(&self, entities: &[Entity]) -> Result<Vec<Wall>> {
         // Step 1: filter LINEs on configured wall layers, drop noise tick marks.
-        let mut candidates: Vec<(usize, LineSeg, LayerName)> = entities
+        let candidates: Vec<(usize, LineSeg, LayerName)> = entities
             .iter()
             .enumerate()
             .filter_map(|(idx, e)| match e {
                 Entity::Line { p1, p2, layer, .. } => {
                     if self.config.layers.iter().any(|l| l == layer) {
-                        let seg = LineSeg { a: *p1, b: *p2, layer_idx: idx };
+                        let seg = LineSeg { a: *p1, b: *p2 };
                         if seg.length() >= self.config.min_line_length {
                             Some((idx, seg, layer.clone()))
                         } else {
@@ -231,11 +230,7 @@ impl WallExtractor for ParallelLinePairExtractor {
 
 /// Test whether two line segments form a wall pair. Returns (centerline,
 /// thickness) when they do.
-fn check_wall_pair(
-    a: &LineSeg,
-    b: &LineSeg,
-    config: &WallConfig,
-) -> Option<(Polyline, f64)> {
+fn check_wall_pair(a: &LineSeg, b: &LineSeg, config: &WallConfig) -> Option<(Polyline, f64)> {
     // 1. Parallel check (direction-agnostic).
     let angle_a = a.angle_unsigned();
     let angle_b = b.angle_unsigned();
@@ -279,8 +274,12 @@ impl Midpoint for LineSeg {
     }
 }
 
-fn midpoint(a: &Point, b: &Point) -> Point {
-    Point::new((a.x + b.x) / 2.0, (a.y + b.y) / 2.0, (a.z + b.z) / 2.0)
+const fn midpoint(a: &Point, b: &Point) -> Point {
+    Point::new(
+        f64::midpoint(a.x, b.x),
+        f64::midpoint(a.y, b.y),
+        f64::midpoint(a.z, b.z),
+    )
 }
 
 fn perpendicular_distance(p: &Point, line: &LineSeg) -> f64 {
@@ -301,7 +300,11 @@ fn project_onto_line(p: &Point, line: &LineSeg) -> (Point, f64) {
     }
     let t = ap_x.mul_add(ab_x, ap_y * ab_y) / len_sq;
     (
-        Point::new(line.a.x + ab_x * t, line.a.y + ab_y * t, line.a.z),
+        Point::new(
+            ab_x.mul_add(t, line.a.x),
+            ab_y.mul_add(t, line.a.y),
+            line.a.z,
+        ),
         t,
     )
 }
@@ -354,26 +357,45 @@ mod tests {
     use cad_core::EntityProps;
 
     fn line(p1: Point, p2: Point, layer: &str) -> Entity {
-        Entity::Line { p1, p2, layer: layer.into(), props: EntityProps::default() }
+        Entity::Line {
+            p1,
+            p2,
+            layer: layer.into(),
+            props: EntityProps::default(),
+        }
     }
 
     #[test]
     fn extracts_single_wall_from_parallel_pair() {
         let entities = vec![
-            line(Point::new(0.0, 0.0, 0.0), Point::new(10000.0, 0.0, 0.0), "WALLS"),
-            line(Point::new(0.0, 200.0, 0.0), Point::new(10000.0, 200.0, 0.0), "WALLS"),
+            line(
+                Point::new(0.0, 0.0, 0.0),
+                Point::new(10000.0, 0.0, 0.0),
+                "WALLS",
+            ),
+            line(
+                Point::new(0.0, 200.0, 0.0),
+                Point::new(10000.0, 200.0, 0.0),
+                "WALLS",
+            ),
         ];
-        let walls = ParallelLinePairExtractor::default().extract(&entities).unwrap();
+        let walls = ParallelLinePairExtractor::default()
+            .extract(&entities)
+            .unwrap();
         assert_eq!(walls.len(), 1);
         assert!((walls[0].thickness - 200.0).abs() < 1e-6);
     }
 
     #[test]
     fn extracts_partition_wall_from_lone_line() {
-        let entities = vec![
-            line(Point::new(4000.0, 200.0, 0.0), Point::new(4000.0, 6300.0, 0.0), "WALLS"),
-        ];
-        let walls = ParallelLinePairExtractor::default().extract(&entities).unwrap();
+        let entities = vec![line(
+            Point::new(4000.0, 200.0, 0.0),
+            Point::new(4000.0, 6300.0, 0.0),
+            "WALLS",
+        )];
+        let walls = ParallelLinePairExtractor::default()
+            .extract(&entities)
+            .unwrap();
         assert_eq!(walls.len(), 1);
         assert_eq!(walls[0].kind, WallKind::Partition);
     }
@@ -382,27 +404,50 @@ mod tests {
     fn ignores_short_tick_marks() {
         // Tick marks: 100mm long, below min_line_length=200.
         let entities = vec![
-            line(Point::new(500.0, 6450.0, 0.0), Point::new(600.0, 6450.0, 0.0), "WALLS"),
-            line(Point::new(1000.0, 6450.0, 0.0), Point::new(1100.0, 6450.0, 0.0), "WALLS"),
+            line(
+                Point::new(500.0, 6450.0, 0.0),
+                Point::new(600.0, 6450.0, 0.0),
+                "WALLS",
+            ),
+            line(
+                Point::new(1000.0, 6450.0, 0.0),
+                Point::new(1100.0, 6450.0, 0.0),
+                "WALLS",
+            ),
         ];
-        let walls = ParallelLinePairExtractor::default().extract(&entities).unwrap();
+        let walls = ParallelLinePairExtractor::default()
+            .extract(&entities)
+            .unwrap();
         assert_eq!(walls.len(), 0, "tick marks should be filtered");
     }
 
     #[test]
     fn ignores_non_wall_layers() {
         let entities = vec![
-            line(Point::new(0.0, 0.0, 0.0), Point::new(10000.0, 0.0, 0.0), "FURNITURE"),
-            line(Point::new(0.0, 200.0, 0.0), Point::new(10000.0, 200.0, 0.0), "FURNITURE"),
+            line(
+                Point::new(0.0, 0.0, 0.0),
+                Point::new(10000.0, 0.0, 0.0),
+                "FURNITURE",
+            ),
+            line(
+                Point::new(0.0, 200.0, 0.0),
+                Point::new(10000.0, 200.0, 0.0),
+                "FURNITURE",
+            ),
         ];
-        let walls = ParallelLinePairExtractor::default().extract(&entities).unwrap();
+        let walls = ParallelLinePairExtractor::default()
+            .extract(&entities)
+            .unwrap();
         assert_eq!(walls.len(), 0);
     }
 
     fn wall_for_classify(layer: &str, thickness: f64) -> Wall {
         Wall {
             id: 0,
-            centerline: Polyline::new(vec![Point::new(0.0, 0.0, 0.0), Point::new(1000.0, 0.0, 0.0)], false),
+            centerline: Polyline::new(
+                vec![Point::new(0.0, 0.0, 0.0), Point::new(1000.0, 0.0, 0.0)],
+                false,
+            ),
             thickness,
             height: None,
             layer: layer.into(),
@@ -416,21 +461,48 @@ mod tests {
         let cfg = HierarchyConfig::default();
 
         // Korean hints — even with sub-partition thickness, layer hint wins.
-        assert_eq!(classify_one_wall(&wall_for_classify("외벽", 50.0), &cfg), WallKind::Exterior);
-        assert_eq!(classify_one_wall(&wall_for_classify("내벽", 50.0), &cfg), WallKind::Interior);
-        assert_eq!(classify_one_wall(&wall_for_classify("파티션", 500.0), &cfg), WallKind::Partition);
+        assert_eq!(
+            classify_one_wall(&wall_for_classify("외벽", 50.0), &cfg),
+            WallKind::Exterior
+        );
+        assert_eq!(
+            classify_one_wall(&wall_for_classify("내벽", 50.0), &cfg),
+            WallKind::Interior
+        );
+        assert_eq!(
+            classify_one_wall(&wall_for_classify("파티션", 500.0), &cfg),
+            WallKind::Partition
+        );
 
         // English hints (case-insensitive substring match).
-        assert_eq!(classify_one_wall(&wall_for_classify("EXTR-WALL", 50.0), &cfg), WallKind::Exterior);
-        assert_eq!(classify_one_wall(&wall_for_classify("intr_wall", 50.0), &cfg), WallKind::Interior);
-        assert_eq!(classify_one_wall(&wall_for_classify("PART_01", 500.0), &cfg), WallKind::Partition);
+        assert_eq!(
+            classify_one_wall(&wall_for_classify("EXTR-WALL", 50.0), &cfg),
+            WallKind::Exterior
+        );
+        assert_eq!(
+            classify_one_wall(&wall_for_classify("intr_wall", 50.0), &cfg),
+            WallKind::Interior
+        );
+        assert_eq!(
+            classify_one_wall(&wall_for_classify("PART_01", 500.0), &cfg),
+            WallKind::Partition
+        );
     }
 
     #[test]
     fn classify_thickness_fallback_when_no_hint() {
         let cfg = HierarchyConfig::default();
-        assert_eq!(classify_one_wall(&wall_for_classify("WALLS", 200.0), &cfg), WallKind::Exterior);
-        assert_eq!(classify_one_wall(&wall_for_classify("WALLS", 150.0), &cfg), WallKind::Interior);
-        assert_eq!(classify_one_wall(&wall_for_classify("WALLS", 50.0), &cfg), WallKind::Partition);
+        assert_eq!(
+            classify_one_wall(&wall_for_classify("WALLS", 200.0), &cfg),
+            WallKind::Exterior
+        );
+        assert_eq!(
+            classify_one_wall(&wall_for_classify("WALLS", 150.0), &cfg),
+            WallKind::Interior
+        );
+        assert_eq!(
+            classify_one_wall(&wall_for_classify("WALLS", 50.0), &cfg),
+            WallKind::Partition
+        );
     }
 }

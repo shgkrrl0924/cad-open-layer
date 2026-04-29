@@ -32,18 +32,14 @@ pub struct RoomConfig {
 impl Default for RoomConfig {
     fn default() -> Self {
         Self {
-            max_extension: 250.0,  // mm
+            max_extension: 250.0, // mm
             min_area_sq_m: 1.0,
             snap_grid: 1.0, // 1mm
         }
     }
 }
 
-pub fn detect_rooms(
-    walls: &[Wall],
-    texts: &[Entity],
-    config: &RoomConfig,
-) -> Result<Vec<Room>> {
+pub fn detect_rooms(walls: &[Wall], texts: &[Entity], config: &RoomConfig) -> Result<Vec<Room>> {
     // Step 1: extend wall endpoints
     let extended = extend_endpoints(walls, config.max_extension);
 
@@ -151,7 +147,7 @@ fn extend_one_endpoint(
         let intersection = infinite_line_intersection(endpoint, _other_end, oa, ob);
         if let Some(p) = intersection {
             let dist = endpoint.distance(&p);
-            if dist <= max_extension && best.map_or(true, |(d, _)| dist < d) {
+            if dist <= max_extension && best.is_none_or(|(d, _)| dist < d) {
                 best = Some((dist, p));
             }
         }
@@ -161,12 +157,7 @@ fn extend_one_endpoint(
 
 /// Compute the intersection of two infinite lines, each defined by two
 /// distinct points. Returns None if parallel.
-fn infinite_line_intersection(
-    a1: Point,
-    a2: Point,
-    b1: Point,
-    b2: Point,
-) -> Option<Point> {
+fn infinite_line_intersection(a1: Point, a2: Point, b1: Point, b2: Point) -> Option<Point> {
     let dx1 = a2.x - a1.x;
     let dy1 = a2.y - a1.y;
     let dx2 = b2.x - b1.x;
@@ -176,13 +167,10 @@ fn infinite_line_intersection(
         return None;
     }
     let t = ((b1.x - a1.x).mul_add(dy2, -((b1.y - a1.y) * dx2))) / denom;
-    Some(Point::new(a1.x + dx1 * t, a1.y + dy1 * t, 0.0))
+    Some(Point::new(dx1.mul_add(t, a1.x), dy1.mul_add(t, a1.y), 0.0))
 }
 
-fn split_at_intersections(
-    segments: &[(Point, Point, WallId)],
-    snap: f64,
-) -> Vec<AtomicSegment> {
+fn split_at_intersections(segments: &[(Point, Point, WallId)], snap: f64) -> Vec<AtomicSegment> {
     // For each segment, collect intersection points with all other segments.
     let n = segments.len();
     let mut breakpoints: Vec<Vec<Point>> = (0..n).map(|_| vec![]).collect();
@@ -218,7 +206,10 @@ fn split_at_intersections(
         let snapped: Vec<Point> = points.into_iter().map(|p| snap_point(p, snap)).collect();
         let mut dedup: Vec<Point> = vec![];
         for p in snapped {
-            if dedup.last().map_or(true, |q: &Point| !p.approx_eq(q, snap * 0.5)) {
+            if dedup
+                .last()
+                .is_none_or(|q: &Point| !p.approx_eq(q, snap * 0.5))
+            {
                 dedup.push(p);
             }
         }
@@ -239,14 +230,14 @@ fn segment_intersection(a1: Point, a2: Point, b1: Point, b2: Point) -> Option<Po
     let dy1 = a2.y - a1.y;
     let dx2 = b2.x - b1.x;
     let dy2 = b2.y - b1.y;
-    let denom = dx1 * dy2 - dy1 * dx2;
+    let denom = dx1.mul_add(dy2, -(dy1 * dx2));
     if denom.abs() < 1e-9 {
         return None;
     }
-    let t = ((b1.x - a1.x) * dy2 - (b1.y - a1.y) * dx2) / denom;
-    let s = ((b1.x - a1.x) * dy1 - (b1.y - a1.y) * dx1) / denom;
+    let t = (b1.x - a1.x).mul_add(dy2, -((b1.y - a1.y) * dx2)) / denom;
+    let s = (b1.x - a1.x).mul_add(dy1, -((b1.y - a1.y) * dx1)) / denom;
     if t > -1e-6 && t < 1.0 + 1e-6 && s > -1e-6 && s < 1.0 + 1e-6 {
-        return Some(Point::new(a1.x + dx1 * t, a1.y + dy1 * t, 0.0));
+        return Some(Point::new(dx1.mul_add(t, a1.x), dy1.mul_add(t, a1.y), 0.0));
     }
     None
 }
@@ -254,11 +245,11 @@ fn segment_intersection(a1: Point, a2: Point, b1: Point, b2: Point) -> Option<Po
 fn param_along(p: Point, a: Point, b: Point) -> f64 {
     let dx = b.x - a.x;
     let dy = b.y - a.y;
-    let len_sq = dx * dx + dy * dy;
+    let len_sq = dx.mul_add(dx, dy * dy);
     if len_sq < 1e-12 {
         return 0.0;
     }
-    ((p.x - a.x) * dx + (p.y - a.y) * dy) / len_sq
+    (p.x - a.x).mul_add(dx, (p.y - a.y) * dy) / len_sq
 }
 
 fn snap_point(p: Point, grid: f64) -> Point {
@@ -292,17 +283,18 @@ fn extract_bounded_faces(atomic: &[AtomicSegment], snap: f64) -> Vec<FaceBoundar
         ((p.x * s).round() as i64, (p.y * s).round() as i64)
     };
 
-    let mut intern = |p: Point, vertex_pos: &mut Vec<Point>, vertex_idx: &mut HashMap<(i64, i64), usize>| {
-        let k = key(p);
-        if let Some(&idx) = vertex_idx.get(&k) {
-            idx
-        } else {
-            let idx = vertex_pos.len();
-            vertex_pos.push(p);
-            vertex_idx.insert(k, idx);
-            idx
-        }
-    };
+    let intern =
+        |p: Point, vertex_pos: &mut Vec<Point>, vertex_idx: &mut HashMap<(i64, i64), usize>| {
+            let k = key(p);
+            if let Some(&idx) = vertex_idx.get(&k) {
+                idx
+            } else {
+                let idx = vertex_pos.len();
+                vertex_pos.push(p);
+                vertex_idx.insert(k, idx);
+                idx
+            }
+        };
 
     let mut edges: Vec<HalfEdge> = vec![];
     for seg in atomic {
@@ -313,8 +305,20 @@ fn extract_bounded_faces(atomic: &[AtomicSegment], snap: f64) -> Vec<FaceBoundar
         }
         let e_ij = edges.len();
         let e_ji = e_ij + 1;
-        edges.push(HalfEdge { origin: i, target: j, twin: e_ji, next: None, wall_id: seg.wall_id });
-        edges.push(HalfEdge { origin: j, target: i, twin: e_ij, next: None, wall_id: seg.wall_id });
+        edges.push(HalfEdge {
+            origin: i,
+            target: j,
+            twin: e_ji,
+            next: None,
+            wall_id: seg.wall_id,
+        });
+        edges.push(HalfEdge {
+            origin: j,
+            target: i,
+            twin: e_ij,
+            next: None,
+            wall_id: seg.wall_id,
+        });
     }
 
     // Group outgoing edges per origin vertex.
@@ -339,8 +343,7 @@ fn extract_bounded_faces(atomic: &[AtomicSegment], snap: f64) -> Vec<FaceBoundar
     // Set `next` pointers using the DCEL formula:
     //   for adjacent outgoing pair (e_i, e_{i+1}):
     //     edges[e_i.twin].next = e_{i+1}
-    for v in 0..n_verts {
-        let outs = &outgoing[v];
+    for outs in &outgoing {
         let k = outs.len();
         if k == 0 {
             continue;
@@ -408,14 +411,20 @@ fn extract_bounded_faces(atomic: &[AtomicSegment], snap: f64) -> Vec<FaceBoundar
 fn find_label_inside(texts: &[Entity], polygon: &[Point]) -> Option<String> {
     for t in texts {
         let (pos, value, layer) = match t {
-            Entity::Text { position, value, layer, .. }
-                if layer == "TEXT" || layer == "TEXTS" || layer == "ROOMS" =>
-            {
+            Entity::Text {
+                position,
+                value,
+                layer,
+                ..
+            } if layer == "TEXT" || layer == "TEXTS" || layer == "ROOMS" => {
                 (*position, value.clone(), layer.clone())
             }
-            Entity::MText { position, value, layer, .. }
-                if layer == "TEXT" || layer == "TEXTS" || layer == "ROOMS" =>
-            {
+            Entity::MText {
+                position,
+                value,
+                layer,
+                ..
+            } if layer == "TEXT" || layer == "TEXTS" || layer == "ROOMS" => {
                 (*position, value.clone(), layer.clone())
             }
             _ => continue,
@@ -436,10 +445,32 @@ mod tests {
 
     fn rect_walls() -> Vec<Wall> {
         vec![
-            wall(1, vec![Point::new(0.0, 0.0, 0.0), Point::new(10000.0, 0.0, 0.0)], 200.0),
-            wall(2, vec![Point::new(10000.0, 0.0, 0.0), Point::new(10000.0, 6000.0, 0.0)], 200.0),
-            wall(3, vec![Point::new(10000.0, 6000.0, 0.0), Point::new(0.0, 6000.0, 0.0)], 200.0),
-            wall(4, vec![Point::new(0.0, 6000.0, 0.0), Point::new(0.0, 0.0, 0.0)], 200.0),
+            wall(
+                1,
+                vec![Point::new(0.0, 0.0, 0.0), Point::new(10000.0, 0.0, 0.0)],
+                200.0,
+            ),
+            wall(
+                2,
+                vec![
+                    Point::new(10000.0, 0.0, 0.0),
+                    Point::new(10000.0, 6000.0, 0.0),
+                ],
+                200.0,
+            ),
+            wall(
+                3,
+                vec![
+                    Point::new(10000.0, 6000.0, 0.0),
+                    Point::new(0.0, 6000.0, 0.0),
+                ],
+                200.0,
+            ),
+            wall(
+                4,
+                vec![Point::new(0.0, 6000.0, 0.0), Point::new(0.0, 0.0, 0.0)],
+                200.0,
+            ),
         ]
     }
 
@@ -461,15 +492,27 @@ mod tests {
         let rooms = detect_rooms(&walls, &[], &RoomConfig::default()).unwrap();
         assert_eq!(rooms.len(), 1, "single rectangle should yield 1 room");
         let r = &rooms[0];
-        assert!((r.area_sq_m - 60.0).abs() < 0.5, "10m × 6m = 60m², got {}", r.area_sq_m);
+        assert!(
+            (r.area_sq_m - 60.0).abs() < 0.5,
+            "10m × 6m = 60m², got {}",
+            r.area_sq_m
+        );
     }
 
     #[test]
     fn extends_endpoint_to_nearby_perpendicular_wall() {
         // Two walls that ALMOST meet (100mm gap).
         let walls = vec![
-            wall(1, vec![Point::new(0.0, 100.0, 0.0), Point::new(10000.0, 100.0, 0.0)], 200.0),
-            wall(2, vec![Point::new(100.0, 0.0, 0.0), Point::new(100.0, 6000.0, 0.0)], 200.0),
+            wall(
+                1,
+                vec![Point::new(0.0, 100.0, 0.0), Point::new(10000.0, 100.0, 0.0)],
+                200.0,
+            ),
+            wall(
+                2,
+                vec![Point::new(100.0, 0.0, 0.0), Point::new(100.0, 6000.0, 0.0)],
+                200.0,
+            ),
         ];
         let extended = extend_endpoints(&walls, 250.0);
         // W1's start (0, 100) should be moved to W2's centerline x=100 → (100, 100).

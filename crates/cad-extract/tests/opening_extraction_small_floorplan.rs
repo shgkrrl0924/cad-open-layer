@@ -29,12 +29,23 @@ fn extracts_openings_from_small_floorplan() {
         );
     }
 
-    let doors: Vec<_> = openings.iter().filter(|o| o.kind == OpeningKind::Door).collect();
-    let windows: Vec<_> = openings.iter().filter(|o| o.kind == OpeningKind::Window).collect();
+    let doors: Vec<_> = openings
+        .iter()
+        .filter(|o| o.kind == OpeningKind::Door)
+        .collect();
+    let windows: Vec<_> = openings
+        .iter()
+        .filter(|o| o.kind == OpeningKind::Window)
+        .collect();
 
     // Per golden: 6 doors + 6 windows = 12 openings.
     assert_eq!(doors.len(), 6, "expected 6 doors, got {}", doors.len());
-    assert_eq!(windows.len(), 6, "expected 6 windows, got {}", windows.len());
+    assert_eq!(
+        windows.len(),
+        6,
+        "expected 6 windows, got {}",
+        windows.len()
+    );
     assert_eq!(openings.len(), 12, "expected 12 total openings");
 }
 
@@ -67,10 +78,16 @@ fn small_floorplan_doors_link_to_walls() {
         .unwrap();
     let openings = detect_openings(&doc.entities, &walls, &OpeningConfig::default()).unwrap();
 
-    let doors: Vec<_> = openings.iter().filter(|o| o.kind == OpeningKind::Door).collect();
+    let doors: Vec<_> = openings
+        .iter()
+        .filter(|o| o.kind == OpeningKind::Door)
+        .collect();
     let linked = doors.iter().filter(|d| d.host_wall.is_some()).count();
 
     // At least 5 of 6 doors should successfully link to a wall.
     // (One door at hinge=(9800,1600) is on exterior wall W2 — should match.)
-    assert!(linked >= 5, "expected at least 5 doors linked to walls, got {linked}");
+    assert!(
+        linked >= 5,
+        "expected at least 5 doors linked to walls, got {linked}"
+    );
 }

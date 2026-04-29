@@ -1,9 +1,9 @@
 //! Verify that wall layer names round-trip through synthesis.
 //!
-//! Codex+advisor flagged: floorplan_to_dxf was collapsing every wall onto
+//! Codex+advisor flagged: `floorplan_to_dxf` was collapsing every wall onto
 //! `config.wall_layer`, so Korean ("외벽"/"내벽") or English ("EXTR-..."/"INTR-...")
 //! layer hints would be lost on a synthesize → reparse cycle, breaking the
-//! WallKind classification round-trip.
+//! `WallKind` classification round-trip.
 
 use std::io::Cursor;
 
@@ -18,10 +18,10 @@ fn wall(id: u32, layer: &str, p1: Point, p2: Point) -> Wall {
     Wall {
         id,
         centerline: Polyline::new(vec![p1, p2], false),
-        thickness: 50.0,  // sub-partition thickness — only layer hint can save it
+        thickness: 50.0, // sub-partition thickness — only layer hint can save it
         height: None,
         layer: layer.into(),
-        kind: WallKind::Unknown,  // re-classified by extract_floorplan
+        kind: WallKind::Unknown, // re-classified by extract_floorplan
         openings: vec![],
     }
 }
@@ -57,22 +57,32 @@ fn korean_layer_hint_survives_synthesis() {
     // Re-extracted walls should pick up the original Korean layer names and
     // be classified accordingly. (Note: extract_floorplan re-pairs LINEs into
     // walls, so wall identity is by geometry, not original WallId.)
-    let exterior_count = regen.walls.iter().filter(|w| w.kind == WallKind::Exterior).count();
-    let interior_count = regen.walls.iter().filter(|w| w.kind == WallKind::Interior).count();
+    let exterior_count = regen
+        .walls
+        .iter()
+        .filter(|w| w.kind == WallKind::Exterior)
+        .count();
+    let interior_count = regen
+        .walls
+        .iter()
+        .filter(|w| w.kind == WallKind::Interior)
+        .count();
 
     eprintln!(
         "Layers in regen: {:?}",
-        regen.walls.iter().map(|w| w.layer.as_str()).collect::<Vec<_>>()
+        regen
+            .walls
+            .iter()
+            .map(|w| w.layer.as_str())
+            .collect::<Vec<_>>()
     );
 
     assert!(
         exterior_count >= 1,
-        "외벽 layer hint must survive synthesis → at least 1 Exterior wall expected, got {}",
-        exterior_count
+        "외벽 layer hint must survive synthesis → at least 1 Exterior wall expected, got {exterior_count}"
     );
     assert!(
         interior_count >= 1,
-        "내벽 layer hint must survive synthesis → at least 1 Interior wall expected, got {}",
-        interior_count
+        "내벽 layer hint must survive synthesis → at least 1 Interior wall expected, got {interior_count}"
     );
 }

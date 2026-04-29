@@ -14,9 +14,7 @@
 
 use cad_core::error::Result;
 use cad_core::{DimensionKindRaw, Entity, LayerName, Point};
-use cad_semantic::{
-    Axis, Dimension, DimensionId, DimensionKind, DimensionTarget, Wall, WallId,
-};
+use cad_semantic::{Axis, Dimension, DimensionId, DimensionKind, DimensionTarget, Wall, WallId};
 
 #[derive(Debug, Clone)]
 pub struct DimensionConfig {
@@ -38,7 +36,7 @@ impl Default for DimensionConfig {
                 "A-DIMS".into(),
                 "치수".into(),
             ],
-            length_match_eps: 1.0,    // 1mm tolerance
+            length_match_eps: 1.0,     // 1mm tolerance
             spatial_match_max: 1500.0, // 1.5m
         }
     }
@@ -70,12 +68,8 @@ pub fn reconstruct_dimensions(
                 // Compute from defining points (13/14 = extension origins)
                 defining_points[3].distance(&defining_points[4])
             });
-            let target = link_dimension_target(
-                &defining_points[3],
-                &defining_points[4],
-                walls,
-                config,
-            );
+            let target =
+                link_dimension_target(&defining_points[3], &defining_points[4], walls, config);
             result.push(Dimension {
                 id: next_id,
                 kind: dim_kind_from_raw(*kind),
@@ -91,7 +85,13 @@ pub fn reconstruct_dimensions(
 
     // Pattern 2: TEXT-on-dimension-layer with numeric value.
     for e in entities {
-        if let Entity::Text { position, value, layer, .. } = e {
+        if let Entity::Text {
+            position,
+            value,
+            layer,
+            ..
+        } = e
+        {
             if !config.layers.iter().any(|l| l == layer) {
                 continue;
             }
@@ -99,12 +99,7 @@ pub fn reconstruct_dimensions(
                 Some(v) => v,
                 None => continue,
             };
-            let host_wall = find_wall_by_length_and_proximity(
-                walls,
-                measured,
-                position,
-                config,
-            );
+            let host_wall = find_wall_by_length_and_proximity(walls, measured, position, config);
             let (origin, target, target_link) = match host_wall {
                 Some(w) => {
                     let v = &w.centerline.vertices;
@@ -181,9 +176,7 @@ fn find_wall_by_length_and_proximity<'a>(
     let mut best: Option<(&Wall, f64)> = None;
     for w in candidates {
         let dist = wall_centerline_distance(text_pos, w);
-        if dist <= config.spatial_match_max
-            && best.map_or(true, |(_, d)| dist < d)
-        {
+        if dist <= config.spatial_match_max && best.is_none_or(|(_, d)| dist < d) {
             best = Some((w, dist));
         }
     }
@@ -212,9 +205,13 @@ fn perp_dist_to_segment(p: Point, a: Point, b: Point) -> f64 {
     if len_sq < 1e-12 {
         return p.distance(&a);
     }
-    let t = ((p.x - a.x) * ab_x + (p.y - a.y) * ab_y) / len_sq;
+    let t = (p.x - a.x).mul_add(ab_x, (p.y - a.y) * ab_y) / len_sq;
     let t_clamped = t.clamp(0.0, 1.0);
-    let proj = Point::new(a.x + ab_x * t_clamped, a.y + ab_y * t_clamped, 0.0);
+    let proj = Point::new(
+        ab_x.mul_add(t_clamped, a.x),
+        ab_y.mul_add(t_clamped, a.y),
+        0.0,
+    );
     p.distance(&proj)
 }
 
@@ -244,10 +241,14 @@ fn link_dimension_target(
 
     // Check 2: same-axis room dimension (origin and target same X or Y).
     if (origin.x - target.x).abs() < 1.0 {
-        return Some(DimensionTarget::Custom { points: vec![*origin, *target] });
+        return Some(DimensionTarget::Custom {
+            points: vec![*origin, *target],
+        });
     }
 
-    Some(DimensionTarget::Custom { points: vec![*origin, *target] })
+    Some(DimensionTarget::Custom {
+        points: vec![*origin, *target],
+    })
 }
 
 #[allow(dead_code)]
@@ -264,7 +265,7 @@ fn axis_of(origin: &Point, target: &Point) -> Axis {
 }
 
 #[allow(dead_code)]
-fn _ensure_compile(_: WallId) {}
+const fn _ensure_compile(_: WallId) {}
 
 #[cfg(test)]
 mod tests {
@@ -298,8 +299,16 @@ mod tests {
     #[test]
     fn links_text_to_wall_by_length_and_proximity() {
         let walls = vec![
-            wall(1, Point::new(0.0, 100.0, 0.0), Point::new(10000.0, 100.0, 0.0)),
-            wall(2, Point::new(9900.0, 0.0, 0.0), Point::new(9900.0, 6500.0, 0.0)),
+            wall(
+                1,
+                Point::new(0.0, 100.0, 0.0),
+                Point::new(10000.0, 100.0, 0.0),
+            ),
+            wall(
+                2,
+                Point::new(9900.0, 0.0, 0.0),
+                Point::new(9900.0, 6500.0, 0.0),
+            ),
         ];
         let entities = vec![Entity::Text {
             position: Point::new(5000.0, 420.0, 0.0),

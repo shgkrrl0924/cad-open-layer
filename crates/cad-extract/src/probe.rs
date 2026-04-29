@@ -28,7 +28,7 @@ pub struct ConventionProbe {
     pub layer_naming: LayerNamingConvention,
 }
 
-pub fn probe(_entities: &[Entity]) -> ConventionProbe {
+pub const fn probe(_entities: &[Entity]) -> ConventionProbe {
     // TODO: count Line vs LwPolyline vs Hatch on wall layers, detect style.
     // Heuristic thresholds in deep-dive.md §8.
     ConventionProbe {

@@ -50,12 +50,11 @@ fn small_floorplan_has_living_room_label() {
     let rooms = detect_rooms(&walls, &doc.entities, &RoomConfig::default()).unwrap();
 
     let labels: Vec<String> = rooms.iter().filter_map(|r| r.label.clone()).collect();
-    eprintln!("Detected room labels: {:?}", labels);
+    eprintln!("Detected room labels: {labels:?}");
 
     assert!(
         labels.iter().any(|l| l == "LIVING"),
-        "should detect LIVING room, found: {:?}",
-        labels
+        "should detect LIVING room, found: {labels:?}"
     );
 }
 
@@ -70,7 +69,7 @@ fn small_floorplan_room_areas_are_reasonable() {
     let rooms = detect_rooms(&walls, &doc.entities, &RoomConfig::default()).unwrap();
 
     let total_area: f64 = rooms.iter().map(|r| r.area_sq_m).sum();
-    eprintln!("Total room area: {:.1}m²", total_area);
+    eprintln!("Total room area: {total_area:.1}m²");
 
     // Building footprint is 10m × 6.5m = 65m². Room areas should sum to less
     // than that (walls take up some space), but at least 80% of footprint.

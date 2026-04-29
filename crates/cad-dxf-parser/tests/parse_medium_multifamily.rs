@@ -26,7 +26,10 @@ fn parses_medium_floorplan_without_error() {
     );
 
     assert!(doc.entities.len() > 10_000, "expected many entities");
-    assert_eq!(doc.header.get("$ACADVER").map(String::as_str), Some("AC1015"));
+    assert_eq!(
+        doc.header.get("$ACADVER").map(String::as_str),
+        Some("AC1015")
+    );
 }
 
 #[test]
@@ -120,7 +123,10 @@ fn medium_floorplan_grid_labels_complete() {
     assert!(has_s, "grid should contain label 'S'");
     assert!(has_1, "grid should contain label '1'");
     assert!(has_19, "grid should contain label '19'");
-    assert!(grid_labels.len() >= 36, "should have at least 36 grid labels");
+    assert!(
+        grid_labels.len() >= 36,
+        "should have at least 36 grid labels"
+    );
 }
 
 #[test]
@@ -136,5 +142,8 @@ fn medium_floorplan_no_unrecognized_entities() {
         .count();
 
     // Medium DXF only uses LINE/ARC/CIRCLE/TEXT — all should be recognized.
-    assert_eq!(raw_count, 0, "all entity types should be handled, got {raw_count} Raw");
+    assert_eq!(
+        raw_count, 0,
+        "all entity types should be handled, got {raw_count} Raw"
+    );
 }

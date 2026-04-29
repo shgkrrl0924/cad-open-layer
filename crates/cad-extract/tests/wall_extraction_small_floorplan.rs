@@ -20,7 +20,10 @@ fn extracts_walls_from_small_floorplan() {
 
     eprintln!("Extracted {} walls from small floorplan", walls.len());
     for w in &walls {
-        eprintln!("  W{}: thickness={:.0}mm, kind={:?}", w.id, w.thickness, w.kind);
+        eprintln!(
+            "  W{}: thickness={:.0}mm, kind={:?}",
+            w.id, w.thickness, w.kind
+        );
     }
 
     // Per golden JSON: 4 exterior walls (paired, 200mm thick) + 4 interior

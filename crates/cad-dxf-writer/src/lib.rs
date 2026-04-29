@@ -1,6 +1,6 @@
 //! DXF file emitter. Layer 1 (write side) of CAD Open Layer.
 //!
-//! Writes ASCII DXF format compatible with AutoCAD R2000 (AC1015) onward.
+//! Writes ASCII DXF format compatible with `AutoCAD` R2000 (AC1015) onward.
 //!
 //! Two APIs:
 //! - [`DxfWriter`] — incremental streaming writer. Caller controls section
@@ -27,7 +27,9 @@ pub struct DxfWriter<W: Write> {
 
 impl<W: Write> DxfWriter<W> {
     pub fn new(writer: W) -> Self {
-        Self { inner: BufWriter::new(writer) }
+        Self {
+            inner: BufWriter::new(writer),
+        }
     }
 
     /// Write the HEADER section with the given variable list. Common vars:
@@ -50,7 +52,7 @@ impl<W: Write> DxfWriter<W> {
         Ok(())
     }
 
-    /// Write the TABLES section containing LAYER table and BLOCK_RECORD table.
+    /// Write the TABLES section containing LAYER table and `BLOCK_RECORD` table.
     pub fn write_tables(&mut self, layers: &[LayerDef], block_names: &[&str]) -> Result<()> {
         self.write_pair(0, "SECTION")?;
         self.write_pair(2, "TABLES")?;
@@ -160,15 +162,15 @@ impl<W: Write> DxfWriter<W> {
 }
 
 pub(crate) fn write_pair_to<W: Write>(w: &mut W, code: i32, value: &str) -> Result<()> {
-    writeln!(w, "{}", code)?;
-    writeln!(w, "{}", value)?;
+    writeln!(w, "{code}")?;
+    writeln!(w, "{value}")?;
     Ok(())
 }
 
 pub(crate) fn format_f(value: f64) -> String {
     // 3 decimal places matches the synthetic corpus convention; readers
     // accept any precision so this is purely cosmetic.
-    format!("{:.3}", value)
+    format!("{value:.3}")
 }
 
 /// Convenience: write a complete DXF file in one call.
